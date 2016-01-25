@@ -9,7 +9,7 @@ window.onload = function() {
   conectar();
   
   enviar('{"action": "getMarkers","latitude": '+-22.6086+',"longitude": '+-43.7128+'}');
-  newMap(-22.6086,-43.7128,10)
+  newMap(-22.6086,-43.7128,10);
   // Geracao do mapa
   //NOTE envia o sinal com a localização e é gerado a resposta para mostrar os pontos proximos
   //sendLocal(-22.6086,-43.7128,10);
@@ -82,7 +82,7 @@ function newMap(lat,lon,zoom){
          var position=String(map.getCenter());
          position=position.replace("(","").replace(")","").split(",");
          //console.log('local:'+map.getCenter());
-         envio('{"action": "getMarkers","latitude": '+position[0]+',"longitude": '+position[1]+'}');
+         enviar('{"action": "getMarkers","latitude": '+position[0]+',"longitude": '+position[1]+'}');
          console.log("outro sinal");
          return;
 
