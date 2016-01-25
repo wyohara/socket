@@ -1,44 +1,47 @@
 var resposta='';
 var host= 'ws://138.204.212.65:8889';
 var socket;
-var samp= document.createElement('samp');
 
 //NOTE o primeiro momento ao carregar a pagina é criado o mapa:
-(function() {
-  window.onload = function() {
-    //NOTE criando a conexão websocket
-    var print  = function (message) {
-      samp.innerHTML = message + '\n';
-      output.appendChild(samp);
-      return;
-    };
-    envio('{"action": "getMarkers","latitude": '+-22.6086+',"longitude": '+-43.7128+'}');
-    newMap(-22.6086,-43.7128,10)
-    // Geracao do mapa
-    //NOTE envia o sinal com a localização e é gerado a resposta para mostrar os pontos proximos
-    //sendLocal(-22.6086,-43.7128,10);
+//Isso não é uma função
+window.onload = function() {
+  //NOTE criando a conexão websocket
+  conectar();
+  
+  enviar('{"action": "getMarkers","latitude": '+-22.6086+',"longitude": '+-43.7128+'}');
+  newMap(-22.6086,-43.7128,10)
+  // Geracao do mapa
+  //NOTE envia o sinal com a localização e é gerado a resposta para mostrar os pontos proximos
+  //sendLocal(-22.6086,-43.7128,10);
 
+  //NOTE é gerado a geolocalização verdadeira e criado um novo mapa e novos marcadores
+  //getLocation(15)
+};
 
-    //NOTE é gerado a geolocalização verdadeira e criado um novo mapa e novos marcadores
-    //getLocation(15)
-  };
-})();
-
-function envio(mensagem){
+function conectar(){
   socket = new WebSocket(host);
+  
+  //Isso não é uma função
   socket.onopen = function () {
-    var envio= mensagem;
-    socket.send(envio);
-    console.log("Sinal Enviado: "+envio);
+    console.log("Conectado.");
+    
     return;
   };
+  //Isso não é uma função
+  //É como se fosse um trigger, acontecerá quando receber mensagem. não precisa ser chamado.
   socket.onmessage = function (msg) {
     document.getElementById("resp").innerHTML=msg.data;
     resposta=JSON.parse(msg.data);
     console.log("Resposta Original "+ msg.data);
     console.log("Resposta parsed "+ resposta.markers.length);
+    
     return;
   };
+}
+
+//Isso é uma função
+function enviar(mensagem){
+  socket.send(mensagem);
 }
 
 function newMap(lat,lon,zoom){
