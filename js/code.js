@@ -6,33 +6,32 @@ var samp= document.createElement('samp');
 //NOTE o primeiro momento ao carregar a pagina é criado o mapa:
 (function() {
   window.onload = function() {
+    //NOTE criando a conexão websocket
+    var print  = function (message) {
+      samp.innerHTML = message + '\n';
+      output.appendChild(samp);
+      return;
+    };
+    envio('{"action": "getMarkers","latitude": '+-22.6086+',"longitude": '+-43.7128+'}');
+    newMap(-22.6086,-43.7128,10)
     // Geracao do mapa
     //NOTE envia o sinal com a localização e é gerado a resposta para mostrar os pontos proximos
-
-      sendLocal(-22.6086,-43.7128,10);
+    //sendLocal(-22.6086,-43.7128,10);
 
 
     //NOTE é gerado a geolocalização verdadeira e criado um novo mapa e novos marcadores
-    getLocation(15)
+    //getLocation(15)
   };
 })();
 
-
-function sendLocal(lat,lon,zoom){
-  var print  = function (message) {
-    samp.innerHTML = message + '\n';
-    output.appendChild(samp);
-    return;
-  };
+function envio(mensagem){
   socket = new WebSocket(host);
   socket.onopen = function () {
-    console.log("enviando");
-    var envio='{"action": "getMarkers","latitude": '+lat+',"longitude": '+lon+'}';
+    var envio= mensagem;
     socket.send(envio);
     console.log("Sinal Enviado: "+envio);
     return;
   };
-  //NOTE resposta da conexao
   socket.onmessage = function (msg) {
     document.getElementById("resp").innerHTML=msg.data;
     resposta=JSON.parse(msg.data);
@@ -40,24 +39,6 @@ function sendLocal(lat,lon,zoom){
     console.log("Resposta parsed "+ resposta.markers.length);
     return;
   };
-  newMap(lat,lon,zoom);
-}
-
-
-function getLocation(zoom) {
-  var lat, lon;
-		if (navigator.geolocation) {
-				navigator.geolocation.getCurrentPosition(showPosition);
-		} else {
-				console.log('Navegar não suporta Geolocalização');
-		}
-
-    //NOTE segunda parte da função, onde se obtem a coordenada
-    function showPosition(position) {
-      lat = position.coords.latitude,
-      lon = position.coords.longitude;
-      sendLocal(lat,lon,zoom);
-	}
 }
 
 function newMap(lat,lon,zoom){
@@ -68,7 +49,6 @@ function newMap(lat,lon,zoom){
   });
 
   latLng = new google.maps.LatLng(lat,lon);
-  // inserindo marcador no mapa
   var marker = new google.maps.Marker({
     position: latLng,
     map: map,
@@ -93,19 +73,16 @@ function newMap(lat,lon,zoom){
     }
   }
 
-  /* NOTE infowindow indicando a localização
-  var infowindow = new google.maps.InfoWindow({
-    content: "Estou aqui",
-  });
-    infowindow.open(map, marker);*/
     //NOTE criando event quando mudara  posição do center usando drag
     map.addListener('dragend', function() {
        window.setTimeout(function() {
          var position=String(map.getCenter());
          position=position.replace("(","").replace(")","").split(",");
          //console.log('local:'+map.getCenter());
-         sendLocal(position[0],position[1]);
+         envio('{"action": "getMarkers","latitude": '+position[0]+',"longitude": '+position[1]+'}');
+         console.log("outro sinal");
          return;
+
        }, 500);
      });
    }
