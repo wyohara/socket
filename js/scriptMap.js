@@ -8,10 +8,9 @@ var samp= document.createElement('samp');
   window.onload = function() {
     // Geracao do mapa
     //NOTE envia o sinal com a localização e é gerado a resposta para mostrar os pontos proximos
-
       sendLocal(-22.6086,-43.7128,10);
-
-
+      alert("a");
+      newMap(-22.6086,-43.7128,10);
     //NOTE é gerado a geolocalização verdadeira e criado um novo mapa e novos marcadores
     getLocation(15)
   };
@@ -38,12 +37,12 @@ function sendLocal(lat,lon,zoom){
     resposta=JSON.parse(msg.data);
     console.log("Resposta Original "+ msg.data);
     console.log("Resposta parsed "+ resposta.markers.length);
-    return;
+    return resposta;
   };
-  newMap(lat,lon,zoom);
+
 }
 
-
+/*
 function getLocation(zoom) {
   var lat, lon;
 		if (navigator.geolocation) {
@@ -56,10 +55,10 @@ function getLocation(zoom) {
     function showPosition(position) {
       lat = position.coords.latitude,
       lon = position.coords.longitude;
-      sendLocal(lat,lon,zoom);
+      //sendLocal(lat,lon,zoom);
 	}
 }
-
+*/
 function newMap(lat,lon,zoom){
   var map = new google.maps.Map(document.getElementById("map"), {
     center: new google.maps.LatLng(lat,lon),
@@ -104,7 +103,7 @@ function newMap(lat,lon,zoom){
          var position=String(map.getCenter());
          position=position.replace("(","").replace(")","").split(",");
          //console.log('local:'+map.getCenter());
-         sendLocal(position[0],position[1]);
+         //sendLocal(position[0],position[1]);
          return;
        }, 500);
      });
