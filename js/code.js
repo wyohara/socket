@@ -1,5 +1,4 @@
 //NOTE Variaveis globais usadas
-
 var resposta='';
 var cont=0;
 var host= 'ws://138.204.212.65:8889';
@@ -53,7 +52,7 @@ function obter(){
 		if (navigator.geolocation) {
 				navigator.geolocation.getCurrentPosition(showPosition);
 		} else {
-				console.log('Navegar não suporta Geolocalização');
+				console.log('O navegador não suporta Geolocalização');
 		}
 	}
 
@@ -74,6 +73,7 @@ function obter(){
       mapTypeId: google.maps.MapTypeId.ROADMAP,
     });
 
+    buscaEndereco();
     //Botao para retornar ao centro
     botaoCentralizar(lat,lon);
 
@@ -114,7 +114,7 @@ function botaoCentralizar(latitude, longitude){
 
   DIVBotaoCentralizar.index = 1;
   //inserindo no mapa a div DIVBotaoCentralizar
-  map.controls[google.maps.ControlPosition.TOP_CENTER].push(DIVBotaoCentralizar);
+  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(DIVBotaoCentralizar);
 
   //Metodos do objeto botaoCentralizar
   function botaoCentralizar(corpoBotao, map) {
@@ -151,4 +151,55 @@ function botaoCentralizar(latitude, longitude){
       obter();
     });
   }
+}
+
+
+function buscaEndereco(){
+  //capturando a variavel input para adicionar no mapa
+  var input=document.getElementById('pesquisa');
+  //Criando o elemento input, onde sera inserido o endereço :var input =document.createElement('input');
+  //Criando a caixa de busca do google maps
+  var searchBox = new google.maps.places.SearchBox(input);
+  //Posicionando a caixa de busca dentro do google maps
+  map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+
+  var markers_busca = [];
+  //criando o evento para quando mudarem a caixa de busca(place), digitando um endereço
+  searchBox.addListener('places_changed', function() {
+    //capura o conteúdo
+    var places = searchBox.getPlaces();
+    if (places.length == 0) {
+      return;
+    }
+
+    //apaga todos os marcadores de busca anteriores
+    markers_busca.forEach(function(marker) {
+      marker.setMap(null);
+    });
+    markers_busca = [];
+
+
+    //criando uma bound para mover a tela
+    var bounds = new google.maps.LatLngBounds();
+    places.forEach(function(place) {
+      //Cria o marcador do resultado da busca
+      markers_busca.push(new google.maps.Marker({
+        map: map,
+        title: place.name,
+        position: place.geometry.location
+      }));
+
+      //posiciona a visualizaçao no centro da busca
+      if (place.geometry.viewport) {
+        bounds.union(place.geometry.viewport);
+      } else {
+        bounds.extend(place.geometry.location);
+      }
+    });
+    //Centraliza a imagem no viewport salvo em bounds
+    map.fitBounds(bounds);
+    //envia os dados do centro por sockets
+    obter();
+  });
 }

@@ -5,7 +5,8 @@
   <title>Break Check</title>
   <meta name=viewport content="width=device-width, initial-scale=1">
   <script type="text/javascript" src=js/code.js></script>
-  <script src=http://maps.googleapis.com/maps/api/js></script>
+  <script src="http://maps.googleapis.com/maps/api/js&libraries=places"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBJ4goAFEbjKYg-nP6l4PNnRQzB65CC1B0&libraries=places"async defer></script>
   <link rel=stylesheet href=css/normalize.css>
   <link rel=stylesheet href=css/skeleton.css>
   <link rel=stylesheet href=css/style.css>
@@ -15,6 +16,7 @@
       <div class=container>
           <div class="row">
               <div class="eight columns">
+                <input id="pesquisa" class="controls" type="text" placeholder="Digite sua busca aqui">
                   <div id="map">
 
                   </div>
