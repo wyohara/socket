@@ -1,3 +1,5 @@
+//NOTE Variaveis globais usadas
+
 var resposta='';
 var cont=0;
 var host= 'ws://138.204.212.65:8889';
@@ -6,20 +8,21 @@ var socket = null;
 var map = null;
 var lat, lon;
 
+//NOTE função usada ao carregar a pagina
 window.onload = function() {
   getLocation()
-
-mapper(-22.6086,-43.7128,10);
+  mapper(-22.6086,-43.7128,10);
 };
 
+
+//NOTE função para obter a localização central do ponto
 function obter(){
-  //obtem novos marcadores
   var position=String(map.getCenter());
   position=position.replace("(","").replace(")","").split(",");
   socket.send('{"action": "getMarkers","latitude": '+position[0]+',"longitude": '+position[1]+'}');
-  console.log("Enviado conexão: "+'{"action": "getMarkers","latitude": '+position[0]+',"longitude": '+position[1]+'}');
+  console.log("Enviando conexão: "+'{"action": "getMarkers","latitude": '+position[0]+',"longitude": '+position[1]+'}');
 
-  //recebendo marcadores
+  //NOTE função para gerar os marcadores recebidos pelo websocket
   socket.onmessage = function (msg) {
     resposta=JSON.parse(msg.data);
     console.log("Recebida a resposta da conexão: "+cont);
@@ -39,22 +42,23 @@ function obter(){
     };
   }
 
-
+//NOTE função para obter a localização do usuario
   function getLocation() {
+    function showPosition(position) {
+      lat = position.coords.latitude,
+      lon = position.coords.longitude;
+      mapper(lat,lon,15);
+    }
+
 		if (navigator.geolocation) {
 				navigator.geolocation.getCurrentPosition(showPosition);
 		} else {
 				console.log('Navegar não suporta Geolocalização');
 		}
 	}
-	function showPosition(position) {
-		lat = position.coords.latitude,
-		lon = position.coords.longitude;
-    mapper(lat,lon,15);
-	}
 
+  //NOTE função para geração do mapa completo
   function mapper(lat,lon,zoom){
-
     console.log("conectando");
     socket = new WebSocket(host);
     socket.onopen = function () {
@@ -70,7 +74,10 @@ function obter(){
       mapTypeId: google.maps.MapTypeId.ROADMAP,
     });
 
-    //criando o ponteiro onde você esta
+    //Botao para retornar ao centro
+    botaoCentralizar(lat,lon);
+
+    //criando o marcador da sua localização atual
     var latLng = new google.maps.LatLng(lat,lon);
     console.log("gerar centro");
     var marker = new google.maps.Marker({
@@ -82,15 +89,66 @@ function obter(){
       visible:true,
     });
 
+    //obtendo os pontos pelos websockets
     socket.onopen = function () {
       obter();
       return;
     };
 
-    //NOTE criando event quando mudara  posição do center usando drag
+    //criando event quando arrastar o mapa
     map.addListener('dragend', function() {
       cont=cont+1;
-      console.log("Dragened, Conexão: "+cont);
+      console.log("Dragened, enviando conexão: "+cont);
       obter();
     });
   }
+
+//criando a função para gerar o botao de centralizar
+function botaoCentralizar(latitude, longitude){
+  var Centralizar= {lat: latitude, lng: longitude};
+
+  //criando a div que contera o botao
+  var DIVBotaoCentralizar = document.createElement('div');
+  //criando a variavel que conterá o objeto botaoCentralizar
+  var botaoCentralizar= new botaoCentralizar(DIVBotaoCentralizar, map);
+
+  DIVBotaoCentralizar.index = 1;
+  //inserindo no mapa a div DIVBotaoCentralizar
+  map.controls[google.maps.ControlPosition.TOP_CENTER].push(DIVBotaoCentralizar);
+
+  //Metodos do objeto botaoCentralizar
+  function botaoCentralizar(corpoBotao, map) {
+    //Criando CSS do botao
+    var estiloBotao = document.createElement('div');
+    estiloBotao.style.backgroundColor = '#fff';
+    estiloBotao.style.margin= '2px solid #fff';
+    estiloBotao.style.border = '2px solid #fff';
+    estiloBotao.style.borderRadius = '3px';
+    estiloBotao.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
+    estiloBotao.style.cursor = 'pointer';
+    estiloBotao.style.marginBottom = '22px';
+    estiloBotao.style.textAlign = 'center';
+    estiloBotao.title = 'Click to recenter the map';
+    corpoBotao.appendChild(estiloBotao);
+
+    // Criando CSS do texto do Botao
+    var estiloTexto = document.createElement('div');
+    estiloTexto.style.color = 'rgb(25,25,25)';
+    estiloTexto.style.fontFamily = 'Roboto,Arial,sans-serif';
+    estiloTexto.style.fontSize = '16px';
+    estiloTexto.style.lineHeight = '38px';
+    estiloTexto.style.paddingLeft = '5px';
+    estiloTexto.style.paddingRight = '5px';
+
+    estiloTexto.innerHTML = 'Retornar ao Centro';
+    estiloBotao.appendChild(estiloTexto);
+
+    //Criando evento ao clicar no botao
+    estiloBotao.addEventListener('click', function() {
+      map.setCenter(Centralizar);
+      map.setZoom(15);
+      cont=cont+1;
+      obter();
+    });
+  }
+}
