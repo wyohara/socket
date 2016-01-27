@@ -4,7 +4,17 @@
   <meta charset=utf-8>
   <title>Break Check</title>
   <meta name=viewport content="width=device-width, initial-scale=1">
-  <script type="text/javascript" src=js/code.js></script>
+  <?php
+  $ip = $_SERVER["REMOTE_ADDR"];
+  $data = file_get_contents('http://freegeoip.net/json/'.$ip);
+  echo("<script>".
+  "var latitude= $value->latitude;");
+
+  echo (
+  "var longitude=$value->longitude;".
+  "</script>\n");
+  echo ('<script type="text/javascript" src=js/code.js></script>');
+  ?>
   <script type="text/javascript" src=js/jQuery.js></script>
   <script src="http://maps.googleapis.com/maps/api/js&libraries=places"></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBJ4goAFEbjKYg-nP6l4PNnRQzB65CC1B0&libraries=places"async defer></script>

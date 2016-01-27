@@ -10,23 +10,8 @@ var all='';
 
 //NOTE função usada ao carregar a pagina
 window.onload = function() {
-  /*
-  jQuery.ajax({
-        url  : 'http://freegeoip.net/json/',
-        data : 'cliente=eu&acao=getmenu',
-        type : "GET",
-        crossDomain  : "true",
-        dataType     : "jsonp",
-        contentType  : "application/json",
-        success: function( menu ){
-          all=menu;
-            console.log(a);
-        }
-    });*/
-    gerarMapa(42,42,12);
-
+  gerarMapa(latitude,longitude,12);
 };
-
 
 //NOTE função para obter a localização central do ponto
 function obterMarcadores(){
@@ -34,6 +19,7 @@ function obterMarcadores(){
   position=position.replace("(","").replace(")","").split(",");
   socket.send('{"action": "getMarkers","latitude": '+position[0]+',"longitude": '+position[1]+'}');
   console.log("Enviando conexão: "+'{"action": "getMarkers","latitude": '+position[0]+',"longitude": '+position[1]+'}');
+
 
   //NOTE função para gerar os marcadores recebidos pelo websocket
   socket.onmessage = function (msg) {
@@ -72,9 +58,12 @@ function obterMarcadores(){
       mapTypeId: google.maps.MapTypeId.ROADMAP,
     });
 
+    //NOTE criando botao de busca de endereço
     buscaEndereco();
     //Botao para retornar ao centro
     //botaoCentralizador(lat,lon);
+
+    /*
     try {
       jQuery.ajax({
           url  : 'http://freegeoip.net/json/',
@@ -87,13 +76,16 @@ function obterMarcadores(){
               console.log('Ajax');
               map.setCenter(new google.maps.LatLng(menu.latitude,menu.longitude));
               marker.setPosition(new google.maps.LatLng(menu.latitude,menu.longitude));
+
               obterMarcadores();
           }
         });
       }catch(err) {
+        map.setCenter(new google.maps.LatLng(42,42));
+        marker.setPosition(new google.maps.LatLng(42,42));
             console.log("Erro ao realizar o Ajax: "+err);
             return;
-        }
+        }*/
 
     //NOTE gerando a geolocalização
     function showPosition(position) {
@@ -104,6 +96,7 @@ function obterMarcadores(){
       map.setZoom(15);
       marker.setPosition(centerGeocode);
       obterMarcadores();
+      botaoCentralizador(lat,lon);
     }
 
     if (navigator.geolocation) {
