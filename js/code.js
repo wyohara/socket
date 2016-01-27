@@ -1,5 +1,4 @@
 //NOTE Variaveis globais usadas
-
 var resposta='';
 var cont=0;
 var host= 'ws://138.204.212.65:8889';
@@ -10,13 +9,12 @@ var lat, lon;
 
 //NOTE função usada ao carregar a pagina
 window.onload = function() {
-  getLocation()
-  mapper(-22.6086,-43.7128,10);
+  gerarMapa(-22.6086,-43.7128,10);
 };
 
 
 //NOTE função para obter a localização central do ponto
-function obter(){
+function obterMarcadores(){
   var position=String(map.getCenter());
   position=position.replace("(","").replace(")","").split(",");
   socket.send('{"action": "getMarkers","latitude": '+position[0]+',"longitude": '+position[1]+'}');
@@ -42,23 +40,8 @@ function obter(){
     };
   }
 
-//NOTE função para obter a localização do usuario
-  function getLocation() {
-    function showPosition(position) {
-      lat = position.coords.latitude,
-      lon = position.coords.longitude;
-      mapper(lat,lon,15);
-    }
-
-		if (navigator.geolocation) {
-				navigator.geolocation.getCurrentPosition(showPosition);
-		} else {
-				console.log('Navegar não suporta Geolocalização');
-		}
-	}
-
   //NOTE função para geração do mapa completo
-  function mapper(lat,lon,zoom){
+  function gerarMapa(lat,lon,zoom){
     console.log("conectando");
     socket = new WebSocket(host);
     socket.onopen = function () {
@@ -74,8 +57,26 @@ function obter(){
       mapTypeId: google.maps.MapTypeId.ROADMAP,
     });
 
+    buscaEndereco();
     //Botao para retornar ao centro
-    botaoCentralizar(lat,lon);
+    botaoCentralizador(lat,lon);
+
+    //NOTE gerando a geolocalização
+    function showPosition(position) {
+      lat = position.coords.latitude;
+      lon = position.coords.longitude;
+      var centerGeocode=new google.maps.LatLng(lat,lon);
+      map.setCenter(centerGeocode);
+      map.setZoom(15);
+      marker.setPosition(centerGeocode);
+      obterMarcadores();
+    }
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition);
+    } else {
+      console.log("O seu navegador não suporta Geolocalização");
+    }
 
     //criando o marcador da sua localização atual
     var latLng = new google.maps.LatLng(lat,lon);
@@ -91,7 +92,7 @@ function obter(){
 
     //obtendo os pontos pelos websockets
     socket.onopen = function () {
-      obter();
+      obterMarcadores();
       return;
     };
 
@@ -99,25 +100,25 @@ function obter(){
     map.addListener('dragend', function() {
       cont=cont+1;
       console.log("Dragened, enviando conexão: "+cont);
-      obter();
+      obterMarcadores();
     });
   }
 
 //criando a função para gerar o botao de centralizar
-function botaoCentralizar(latitude, longitude){
+function botaoCentralizador(latitude, longitude){
   var Centralizar= {lat: latitude, lng: longitude};
 
   //criando a div que contera o botao
   var DIVBotaoCentralizar = document.createElement('div');
   //criando a variavel que conterá o objeto botaoCentralizar
-  var botaoCentralizar= new botaoCentralizar(DIVBotaoCentralizar, map);
+  var botaoCentralizar= new estiloBotaoCentralizar(DIVBotaoCentralizar, map);
 
   DIVBotaoCentralizar.index = 1;
   //inserindo no mapa a div DIVBotaoCentralizar
-  map.controls[google.maps.ControlPosition.TOP_CENTER].push(DIVBotaoCentralizar);
+  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(DIVBotaoCentralizar);
 
   //Metodos do objeto botaoCentralizar
-  function botaoCentralizar(corpoBotao, map) {
+  function estiloBotaoCentralizar(corpoBotao, map) {
     //Criando CSS do botao
     var estiloBotao = document.createElement('div');
     estiloBotao.style.backgroundColor = '#fff';
@@ -148,7 +149,58 @@ function botaoCentralizar(latitude, longitude){
       map.setCenter(Centralizar);
       map.setZoom(15);
       cont=cont+1;
-      obter();
+      obterMarcadores();
     });
   }
+}
+
+
+function buscaEndereco(){
+  //capturando a variavel input para adicionar no mapa
+  var input=document.getElementById('pesquisa');
+  //Criando o elemento input, onde sera inserido o endereço :var input =document.createElement('input');
+  //Criando a caixa de busca do google maps
+  var searchBox = new google.maps.places.SearchBox(input);
+  //Posicionando a caixa de busca dentro do google maps
+  map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+
+  var markers_busca = [];
+  //criando o evento para quando mudarem a caixa de busca(place), digitando um endereço
+  searchBox.addListener('places_changed', function() {
+    //capura o conteúdo
+    var places = searchBox.getPlaces();
+    if (places.length === 0) {
+      return;
+    }
+
+    //apaga todos os marcadores de busca anteriores
+    markers_busca.forEach(function(marker) {
+      marker.setMap(null);
+    });
+    markers_busca = [];
+
+
+    //criando uma bound para mover a tela
+    var bounds = new google.maps.LatLngBounds();
+    places.forEach(function(place) {
+      //Cria o marcador do resultado da busca
+      markers_busca.push(new google.maps.Marker({
+        map: map,
+        title: place.name,
+        position: place.geometry.location
+      }));
+
+      //posiciona a visualizaçao no centro da busca
+      if (place.geometry.viewport) {
+        bounds.union(place.geometry.viewport);
+      } else {
+        bounds.extend(place.geometry.location);
+      }
+    });
+    //Centraliza a imagem no viewport salvo em bounds
+    map.fitBounds(bounds);
+    //envia os dados do centro por sockets
+    obterMarcadores();
+  });
 }
