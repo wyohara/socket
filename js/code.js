@@ -6,10 +6,25 @@ var host= 'ws://138.204.212.65:8889';
 var socket = null;
 var map = null;
 var lat, lon;
+var all='';
 
 //NOTE função usada ao carregar a pagina
 window.onload = function() {
-  gerarMapa(-22.6086,-43.7128,10);
+  /*
+  jQuery.ajax({
+        url  : 'http://freegeoip.net/json/',
+        data : 'cliente=eu&acao=getmenu',
+        type : "GET",
+        crossDomain  : "true",
+        dataType     : "jsonp",
+        contentType  : "application/json",
+        success: function( menu ){
+          all=menu;
+            console.log(a);
+        }
+    });*/
+    gerarMapa(42,42,12);
+
 };
 
 
@@ -59,7 +74,26 @@ function obterMarcadores(){
 
     buscaEndereco();
     //Botao para retornar ao centro
-    botaoCentralizador(lat,lon);
+    //botaoCentralizador(lat,lon);
+    try {
+      jQuery.ajax({
+          url  : 'http://freegeoip.net/json/',
+          data : 'cliente=eu&acao=getmenu',
+          type : "GET",
+          crossDomain  : "true",
+          dataType     : "jsonp",
+          contentType  : "application/json",
+          success: function( menu ){
+              console.log('Ajax');
+              map.setCenter(new google.maps.LatLng(menu.latitude,menu.longitude));
+              marker.setPosition(new google.maps.LatLng(menu.latitude,menu.longitude));
+              obterMarcadores();
+          }
+        });
+      }catch(err) {
+            console.log("Erro ao realizar o Ajax: "+err);
+            return;
+        }
 
     //NOTE gerando a geolocalização
     function showPosition(position) {
