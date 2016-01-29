@@ -6,7 +6,8 @@
   <meta name=viewport content="width=device-width, initial-scale=1">
   <?php
   $ip = $_SERVER["REMOTE_ADDR"];
-  $data = file_get_contents('http://freegeoip.net/json/'.$ip);
+  $data = file_get_contents('http://freegeoip.net/json/');
+  $value=json_decode($data);
   echo("<script>".
   "var latitude= $value->latitude;");
 
@@ -29,7 +30,6 @@
               <div class="eight columns">
                 <input id="pesquisa" class="controls" type="text" placeholder="Digite sua busca aqui">
                   <div id="map">
-
                   </div>
               </div>
               <div class="four columns">
