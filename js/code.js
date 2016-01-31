@@ -1,83 +1,69 @@
 //NOTE Variaveis globais usadas
-var resposta;
-var cont=0;
 //var host= 'ws://138.204.212.65:8889';
 var host= 'ws://127.0.0.1:8889';
 var socket = null;
 var map = null;
-var lat, lon;
-var all='';
 var marcadores=[];
 var validador=[];
 
 //NOTE função usada ao carregar a pagina
 window.onload = function() {
-  gerarMapa(latitude,longitude,12);
+  gerarMapa(latitude,longitude,13);
 };
 
-  //NOTE função para geração do mapa completo
-  function gerarMapa(lat,lon,zoom){
-    console.log("conectando");
-    socket = new WebSocket(host);
-    socket.onopen = function () {
-      console.log("Conectado.");
-      return;
-    };
+//NOTE função para geração do mapa completo
+function gerarMapa(lat,lon,zoom){
 
-    //criando mapa
-    console.log("gerar mapa");
-    map = new google.maps.Map(document.getElementById("map"),{
-      center: new google.maps.LatLng(lat,lon),
-      zoom:zoom,
-      mapTypeId: google.maps.MapTypeId.ROADMAP,
-    });
+  socket = new WebSocket(host);
+  socket.onopen = function () {return;};
 
-    //NOTE criando botao de busca de endereço
-    buscaEndereco();
+  //criando mapa
+  map = new google.maps.Map(document.getElementById("map"),{
+    center: new google.maps.LatLng(lat,lon),
+    zoom:zoom,
+    mapTypeId: google.maps.MapTypeId.ROADMAP,
+  });
 
-    //criando o marcador da sua localização atual
-    var latLng = new google.maps.LatLng(lat,lon);
-    console.log("gerar centro");
-    var meuLocal = new google.maps.Marker({
-      position: latLng,
-      map: map,
-      icon:"imagem/point2.png",
-      animation: google.maps.Animation.DROP,
-      title: "Estou Aqui",
-    });
+  //NOTE criando botao de busca de endereço
+  buscaEndereco();
 
-    //NOTE gerando a geolocalização
-    function showPosition(position) {
-      lat = position.coords.latitude;
-      lon = position.coords.longitude;
-      var centerGeocode=new google.maps.LatLng(lat,lon);
-      map.setCenter(centerGeocode);
-      map.setZoom(15);
-      meuLocal.setPosition(centerGeocode);
-      obterMarcadores();
-      botaoCentralizador(lat,lon);
-    }
+  //criando o marcador da sua localização atual
+  var meuLocal = new google.maps.Marker({
+    position: new google.maps.LatLng(lat,lon),
+    map: map,
+    icon:"imagem/point2.png",
+    animation: google.maps.Animation.DROP,
+    title: "Estou Aqui",
+  });
 
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(showPosition);
-    } else {
-      console.log("O seu navegador não suporta Geolocalização");
-    }
-
-
-    //obtendo os pontos pelos websockets
-    socket.onopen = function () {
-      obterMarcadores();
-      return;
-    };
-
-    //criando event quando arrastar o mapa
-    map.addListener('dragend', function() {
-      cont=cont+1;
-      console.log("Dragened, enviando conexão: "+cont);
-      obterMarcadores();
-    });
+  //NOTE gerando a geolocalização
+  function showPosition(position) {
+    centerGeocode=new google.maps.LatLng(position.coords.latitude,position.coords.longitude);
+    map.setCenter(centerGeocode);
+    map.setZoom(15);
+    meuLocal.setPosition(centerGeocode);
+    obterMarcadores();
+    botaoCentralizador(lat,lon);
   }
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(showPosition);
+  } else {
+    console.log("O seu navegador não suporta Geolocalização");
+  }
+
+  //obtendo os pontos pelos websockets
+  socket.onopen = function () {
+    obterMarcadores();
+    return;
+  };
+
+  //criando event quando arrastar o mapa
+  map.addListener('dragend', function() { obterMarcadores(); });
+
+  map.addListener('zoom_changed', function() { obterMarcadores(); });
+
+}
 
 
 //criando a função para gerar o botao de centralizar
@@ -88,7 +74,6 @@ function botaoCentralizador(latitude, longitude){
   var DIVBotaoCentralizar = document.createElement('div');
   //criando a variavel que conterá o objeto botaoCentralizar
   var botaoCentralizar= new estiloBotaoCentralizar(DIVBotaoCentralizar, map);
-
   DIVBotaoCentralizar.index = 1;
   //inserindo no mapa a div DIVBotaoCentralizar
   map.controls[google.maps.ControlPosition.RIGHT_TOP].push(DIVBotaoCentralizar);
@@ -180,60 +165,90 @@ function buscaEndereco(){
 
 //NOTE função para obter a localização central do ponto
 function obterMarcadores(){
-
   //NOTE enviando sinal
-  var position=String(map.getCenter());
-  position=position.replace("(","").replace(")","").split(",");
-  socket.send('{"action": "getMarkers","latitude": '+position[0]+',"longitude": '+position[1]+'}');
-  console.log("Enviando conexão: "+'{"action": "getMarkers","latitude": '+position[0]+',"longitude": '+position[1]+'}');
+  if(map.getZoom()>=13){
+    console.log('Zoom usado: '+map.getZoom());
+    var position=map.getCenter();
+    var corner=map.getBounds().getNorthEast();
 
-  //NOTE obtendo resposta e gerando marcadores
-  socket.onmessage = function (msg) {
-    resposta=JSON.parse(msg.data);
-    console.log("Recebida a resposta da conexão: "+cont);
-    data=resposta.markers;
-    var j=marcadores.length;
+    //Descobrindo o raio absoluto
+    if(Math.abs(corner.lng())>Math.abs(position.lng())){
+      raio=(Math.abs(corner.lng())-Math.abs(position.lng()));
+    }else{
+      raio=(Math.abs(position.lng())-Math.abs(corner.lng()));
+    }
+    //enviando socket
+    socket.send('{"action": "getMarkers","latitude": '+position.lat()+',"longitude": '+position.lng()+',"raio":'+raio+'}');
+    console.log('Enviado: {"action": "getMarkers","latitude": '+position.lat()+',"longitude": '+position.lng()+',"raio":'+raio+'}');
 
-    //gerando os marcadores por meio do array
-    if(resposta.action=="sendMarkers"){
-      for (var i = 0, length = data.length; i < length; i++) {
-        if(validador.indexOf(data[i].lat)===-1){
-          validador.push(resposta.markers[i].lat);
-          console.log(validador);
-          marcadores.push(data[i]);
+    //NOTE obtendo resposta e gerando marcadores
+    socket.onmessage = function (msg) {
+      resposta=JSON.parse(msg.data);
+      data=resposta.markers;
+      var j=marcadores.length;
+
+      //gerando os marcadores por meio do array
+      if(resposta.action=="sendMarkers"){
+        for (var i = 0, length = data.length; i < length; i++) {
+          //verificando se o elemento ja esta no array de elementos usados
+          if(validador.indexOf(data[i].lat)===-1){
+            validador.push(resposta.markers[i].lat);
+            console.log(validador);
+            marcadores.push(data[i]);
+          }
+        }
+
+        //NOTE adicionar ao vetor os dados obtidos
+        for (i=j, length = marcadores.length; i < length; i++) {
+          console.log("GERANDO MARCADOR: "+marcadores[i].lat);
+          gerandoMarcadores(marcadores[i]);
         }
       }
-
-      //NOTE adicionar ao vetor os dados obtidos
-      for (i=j, length = marcadores.length; i < length; i++) {
-        console.log("GERANDO MARCADOR: "+marcadores[i].lat);
-        gerandoMarcadores(marcadores[i]);
-      }
-    }
-  };
+    };
+  }else{
+    console.log("Zoom muito baixo");
+  }
 
   function gerandoMarcadores(pontoUsado){
-    latLng = new google.maps.LatLng(pontoUsado.lat,pontoUsado.lon);
     // inserindo marcador no mapa
     var marker = new google.maps.Marker({
-      position: latLng,
+      position: new google.maps.LatLng(pontoUsado.lat,pontoUsado.lon),
       map: map,
       icon:"imagem/local.png",
       title: pontoUsado.nome,
+      animation: google.maps.Animation.DROP,
     });
     google.maps.event.addListener(marker, "click", function(e) {
       //alert(pontoUsado.nome);
       mostrarInformacao(pontoUsado);
     });
   }
+
 }
+
 
 function mostrarInformacao(pontoUsado){
   var janela=document.getElementById('resp');
+
   janela.style.display='block';
   janela.style.backgroundColor='#ccc';
   janela.style.width='100%';
   janela.style.height='100%';
   janela.style.textAlign='left';
   janela.innerHTML=('<p>Div selecionada: '+pontoUsado.nome+'</p><p>Latitude: '+pontoUsado.lat+'</p><p>Longitude: '+pontoUsado.lon+'</p>');
+
 }
+
+/*
+//Função para abrir o arquivo
+function AbreArquivo(arquivo,pontoUsado){
+  var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+      if (xhttp.readyState == 4 && xhttp.status == 200) {
+        document.getElementById("resp").innerHTML = xhttp.responseText;
+      }
+    };
+    xhttp.open("POST", arquivo, true);
+    xhttp.send();
+}
+*/

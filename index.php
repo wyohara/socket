@@ -16,12 +16,14 @@
   "</script>\n");
   echo ('<script type="text/javascript" src=js/code.js></script>');
   ?>
+
   <script type="text/javascript" src=js/jQuery.js></script>
-  <script src="http://maps.googleapis.com/maps/api/js&libraries=places"></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBJ4goAFEbjKYg-nP6l4PNnRQzB65CC1B0&libraries=places"async defer></script>
   <link rel=stylesheet href=css/normalize.css>
   <link rel=stylesheet href=css/skeleton.css>
   <link rel=stylesheet href=css/style.css>
+
+
 </head>
 <body >
   <div class=section>
