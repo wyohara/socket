@@ -17,6 +17,7 @@
   echo ('<script type="text/javascript" src=js/code.js></script>');
   ?>
 
+  <script type="text/javascript" src=js/markerclusterer.js></script>
   <script type="text/javascript" src=js/jQuery.js></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBJ4goAFEbjKYg-nP6l4PNnRQzB65CC1B0&libraries=places"async defer></script>
   <link rel=stylesheet href=css/normalize.css>

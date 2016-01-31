@@ -5,6 +5,22 @@ var socket = null;
 var map = null;
 var marcadores=[];
 var validador=[];
+var markers=[];
+
+//setando as opções do cluster..
+//http://google-maps-utility-library-v3.googlecode.com/svn/tags/markerclustererplus/2.1.2/markerclustererplus/docs/reference.html
+var mcOptions = {gridSize: 50, maxZoom: 14, styles: [{
+    height: 46,
+    url: "imagem/cluster2.png",
+    width: 46,
+    textColor:'#ffffff',
+  },
+  {
+    height: 46,
+    url: "imagem/cluster2.png",
+    width: 46,
+    textColor:'#ffffff',
+  }]};
 
 //NOTE função usada ao carregar a pagina
 window.onload = function() {
@@ -203,6 +219,7 @@ function obterMarcadores(){
           console.log("GERANDO MARCADOR: "+marcadores[i].lat);
           gerandoMarcadores(marcadores[i]);
         }
+        var mc = new MarkerClusterer(map, markers, mcOptions);
       }
     };
   }else{
@@ -218,12 +235,13 @@ function obterMarcadores(){
       title: pontoUsado.nome,
       animation: google.maps.Animation.DROP,
     });
+
+    markers.push(marker);
     google.maps.event.addListener(marker, "click", function(e) {
       //alert(pontoUsado.nome);
       mostrarInformacao(pontoUsado);
     });
   }
-
 }
 
 
