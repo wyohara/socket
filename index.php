@@ -15,6 +15,7 @@
       <div class=container>
           <div class="row">
               <div class="eight columns">
+                  <input id="searchPlace" type="text" placeholder="Digite sua busca"/>
                   <div id="map">
                   </div>
               </div>

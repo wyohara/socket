@@ -20,20 +20,19 @@ var socket = (function(){
       console.log('[trySocket] canal aberto para comunicação');
       _status=1;
       for (var i = 0; i < _sendCache.length; i++) {
-        setTimeout(function () {
           //.shift remove o primeiro elemento do array
           _ws.send(_sendCache.shift());
           console.log('[trySocket] Enviando websocket');
-        }, 100);
       }
     };
 
       //onmessage indica que houve resposta
       _ws.onmessage = function (msg) {
-        console.log('[trySocket] Sinal de resposta do servidor');
+        console.log('[trySocket] Sinal de resposta do servidor: '+msg.data);
         _resp.push(msg);
         postMessage(msg.data);
       };
+
 
       //fechando a conexão com o websocket
       _ws.onclose = function () {
