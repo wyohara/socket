@@ -1,4 +1,3 @@
-/*jshint asi:true */
 // inicializando os sockets
 var Socket = (function () {
   var _socketW = null
