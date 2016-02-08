@@ -1,4 +1,3 @@
-/*jshint asi:true */
 // inicializando os sockets
 var Socket = (function () {
   var _socketW = null
@@ -81,7 +80,6 @@ var Map = (function () {
     })
 
     //criando a caixa de busca
-
 
     if (navigator.geolocation) {
       var setLocationNow=true;
