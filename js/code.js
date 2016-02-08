@@ -1,3 +1,4 @@
+
 // inicializando os sockets
 var Socket = (function () {
   var _socketW = null
