@@ -4,7 +4,7 @@
   <meta charset=utf-8>
   <title>Break Check</title>
   <meta name=viewport content="width=device-width, initial-scale=1">
-  <!-- <script type="text/javascript" src=js/jQuery.js></script> -->
+  <script type="text/javascript" src=js/markerClusterer.js></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBJ4goAFEbjKYg-nP6l4PNnRQzB65CC1B0&libraries=places"async defer></script>
   <link rel=stylesheet href=css/normalize.css>
   <link rel=stylesheet href=css/skeleton.css>
@@ -14,7 +14,7 @@
   <div class=section>
       <div class=container>
           <div class="row">
-              <div class="eight columns">
+              <div class="nine columns">
                   <input id="searchPlace" type="text" placeholder="Digite sua busca"/>
                   <div id="map">
                   </div>

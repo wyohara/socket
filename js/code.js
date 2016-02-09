@@ -1,56 +1,58 @@
 
 // inicializando os sockets
 var Socket = (function () {
-  var _socketW = null
-  var _resp = null
+  var _socketW = null;
+  var _resp = null;
   var _respFn = function (data) {
     // console.log('Exibindo a resposta do servidor: '+data)
-    return data
-  }
+    return data;
+  };
 
   function initFn () {
-    _socketW = new Worker('js/socket.js')
+    _socketW = new Worker('js/socket.js');
 
     _socketW.onmessage = function (e) {
-      _resp = (e.data)
-      _respFn(e.data)
-    }
+      _resp = (e.data);
+      _respFn(e.data);
+    };
 
-    return
+    return;
   }
 
   return {
     init: initFn,
     send: function (data) {
       if (_socketW !== null) {
-        _socketW.postMessage(data)
+        _socketW.postMessage(data);
       }
     },
     socketResponse: function (cb) {
       if (typeof cb === 'function') {
-        _respFn = cb
+        _respFn = cb;
       }
     },
     resp: function () {
-      return _resp
+      return _resp;
     }
 
-  }
-})()
+  };
+})();
 
 //       Map module
 
 var Map = (function () {
-  var _m = null
+  var _m = null;
+  var marksData=[];
+  var _clusterOptions;
   var _center = {
     'lat': -22.9410272,
     'lng': -43.554638
-  }
-  var _zoom = 9
-  var _mapElement = document.getElementById('map')
-  var _markersArray = []
-  var _updateMap = function () {}
-  var _actionMap = _updateMap
+  };
+  var newMarker;
+  var _zoom = 10;
+  var _mapElement = document.getElementById('map');
+  var _updateMap = function () {};
+  var _actionMap = _updateMap;
   var _divControlCentralize=null;
   var _controlCentralize=null;
 
@@ -58,19 +60,42 @@ var Map = (function () {
     _m = new google.maps.Map(_mapElement, {
       center: _center,
       zoom: _zoom,
-      zoomControl: false,
       mapTypeControl: true,
-    mapTypeControlOptions: {
+      mapTypeControlOptions: {
         style: google.maps.MapTypeControlStyle.DEFAULT,
         position: google.maps.ControlPosition.TOP_LEFT
-    },
+      },
 
       streetViewControl: true,
-    streetViewControlOptions: {
+      streetViewControlOptions: {
         position: google.maps.ControlPosition.TOP_RIGHT,
-    },
+      },
 
-    })
+      zoomControl: true,
+      zoomControlOptions: {
+        position: google.maps.ControlPosition.RIGHT_CENTER,
+        style: google.maps.ZoomControlStyle.DEFAULT,
+      },
+    });
+
+    _clusterOptions = {
+      gridSize: 50,
+      //maxZoom: 14,
+      styles: [
+        {
+          height: 46,
+          url: "imagem/cluster2.png",
+          width: 46,
+          textColor:'#ffffff',
+        },
+        {
+          height: 46,
+          url: "imagem/cluster2.png",
+          width: 46,
+          textColor:'#ffffff'
+        }
+      ]
+    };
 
     var _mLocal = new google.maps.Marker({
       position: _center,
@@ -78,9 +103,45 @@ var Map = (function () {
       icon: 'imagem/point2.png',
       animation: google.maps.Animation.DROP,
       title: 'Estou Aqui',
-    })
+    });
+
+    _mLocal.addListener(
+      'click',
+      function () {
+        //_actionMap(marker.nome,'showPoint');
+        _actionMap();
+      }
+    );
 
     //criando a caixa de busca
+    var inputSearch = document.getElementById('searchPlace');
+    var searchBox = new google.maps.places.SearchBox(inputSearch);
+    _m.controls[google.maps.ControlPosition.TOP_CENTER].push(inputSearch);
+
+    searchBox.addListener('places_changed', function() {
+      var places = searchBox.getPlaces();
+
+      //verificando valores da searchbox
+      if (places.length === 0) {
+        return;
+      }
+
+      //capturando bounds
+      var bounds = new google.maps.LatLngBounds();
+
+      //gerando a posição do resultado
+      places.forEach(function(place) {
+        if (place.geometry.viewport) {
+          // Only geocodes have viewport.
+          bounds.union(place.geometry.viewport);
+        } else {
+          bounds.extend(place.geometry.location);
+        }
+      });
+      _m.fitBounds(bounds);
+      _m.setZoom(13);
+      _updateMap('update');
+    });
 
     if (navigator.geolocation) {
       var setLocationNow=true;
@@ -88,7 +149,7 @@ var Map = (function () {
         var pos = {
           lat: position.coords.latitude,
           lng: position.coords.longitude
-        }
+        };
         if(_controlCentralize!==null){
           //remove o buttonElement (botao de centralizar) e cria um novo com a atual localização a cada rotate do watchPosition
           document.getElementById('buttonElement').remove();
@@ -96,45 +157,58 @@ var Map = (function () {
         _divControlCentralize = document.createElement('div');
         _controlCentralize = CenterControl(_divControlCentralize, _m, pos);
         _divControlCentralize.index = 1;
-        _m.controls[google.maps.ControlPosition.RIGHT_TOP].push(_divControlCentralize);
+        _m.controls[google.maps.ControlPosition.LEFT_CENTER].push(_divControlCentralize);
 
         if(setLocationNow===true){
-          _m.setCenter(pos)
-          _m.setZoom(14)
+          _m.setCenter(pos);
+          _m.setZoom(15);
           setLocationNow=false;
         }
-        _mLocal.setPosition(pos)
-      })
+        _mLocal.setPosition(pos);
+        _updateMap('update');
+      });
     }
 
+    //adicionado condicional:
+    //para nao fazer requisição se estiver dentro da area de zoom
+    //para nao fazer requisição se ainda estiver na area da req anterior
     _m.addListener(
       'dragend',
       function () {
-        _updateMap()
-      }
-    )
+        var _zoomChange=_m.getZoom();
+        if(_zoomChange>=10){
+          _updateMap('update');
 
+        }
+      }
+    );
+    //adicionado condicional:
+    //para nao fazer requisição se estiver com zoom dentro da area de zoom anterior
     _m.addListener(
       'zoom_changed',
       function () {
-        _updateMap()
+        var _zoomChange=_m.getZoom();
+        if(_zoomChange>=10){
+          _updateMap('update');
       }
-    )
+      }
+    );
   }
 
   function addMarker (marker) {
-    var newMarker = new google.maps.Marker({
+    newMarker = new google.maps.Marker({
       position: new google.maps.LatLng(marker.lat, marker.lon),
       icon: 'imagem/local.png',
       title: marker.nome,
       map: _m
-    })
+    });
+    marksData.push(newMarker);
     newMarker.addListener(
       'click',
       function () {
-        _actionMap(marker.nome)
+        _updateMap('showinfo',marker);
       }
-    )
+    );
   }
 
   //aplicando efeito ao botao de centralizar
@@ -167,7 +241,7 @@ var Map = (function () {
     //criando o evento para o botao
     innerElement.addEventListener('click',function(){
       map.setCenter(positon);
-      _updateMap();
+      _updateMap('update');
     });
   }
 
@@ -177,11 +251,11 @@ var Map = (function () {
 
     // gerando o callback para o update do mapa
     updateMap: function (cb) {
-      _updateMap = cb
+      _updateMap = cb;
     },
 
     actionMap: function (cb) {
-      _actionMap = cb
+      _actionMap = cb;
     },
 
     //  parametros do updateMap, zoom, centro, markers
@@ -189,96 +263,113 @@ var Map = (function () {
       // obtendo o zoom para o updateMap
       if (typeof z === 'undefined') {
         if (_m === null) {
-          return false
+          return false;
         }
-        return _m.getZoom()
+        return _m.getZoom();
       }
-      _m.setZoom(z)
+      _m.setZoom(z);
     },
 
     center: function (c) {
       // obtendo o centro para o updateMap
       if (typeof c === 'undefined') {
-        return _m.getCenter()
+        return _m.getCenter();
       }
-      _m.setCenter(c)
+      _m.setCenter(c);
     },
 
     raio: function (r) {
       // obtendo o centro para o updateMap
       if (typeof r === 'undefined') {
-        _mCenter = _m.getCenter()
-        _mCorner = _m.getBounds().getNorthEast()
+        _mCenter = _m.getCenter();
+        _mCorner = _m.getBounds().getNorthEast();
 
         if (Math.abs(_mCorner.lng()) > Math.abs(_mCenter.lng())) {
-          _mRaio = (Math.abs(_mCorner.lng()) - Math.abs(_mCenter.lng()))
-          return _mRaio
+          Raio = (Math.abs(_mCorner.lng()) - Math.abs(_mCenter.lng()));
+          return Raio;
         } else {
-          _mRaio = (Math.abs(_mCenter.lng()) - Math.abs(_mCorner.lng()))
-          return _mRaio
+          Raio = (Math.abs(_mCenter.lng()) - Math.abs(_mCorner.lng()));
+          return Raio;
         }
       }
     },
 
     //   Add um ou mais novos marcadores //  TODO: Remover marcadores
     marker: function (mark) {
+      marksData=[];
       if (Array.isArray(mark)) {
         for (var i = 0; i < mark.length; i++) {
-          addMarker(mark[i])
+          addMarker(mark[i]);
         }
-        return true
+        var mc = new MarkerClusterer(_m, marksData, _clusterOptions,{
+          averageCenter: true
+        });
+        return true;
       }
     },
-  }
-})()
+  };
+})();
 
 /*    Usando os modulos   */
 
 window.onload = function () {
   if (window.Worker) {
-    Map.init()
-    Socket.init()
+    Map.init();
+    Socket.init();
 
     Socket.socketResponse(function (resp) {
-      var dados = JSON.parse(resp)
-      Map.marker(dados.markers)
-    })
+      var dados = JSON.parse(resp);
+      Map.marker(dados.markers);
+    });
 
     // Obtendo os valores sempre que o mapa é atualizado
-    Map.updateMap(function () {
-      var center = Map.center()
-      var zoom = Map.zoom()
-      var raio = Map.raio()
+    Map.updateMap(function (type,otherData) {
+      var requestMsg;
+      var requestSignal;
 
-      var requestMsg = {
+      if(type==='update'){
+      var center = Map.center();
+      var zoom = Map.zoom();
+      var raio = Map.raio();
+
+      requestMsg = {
         action: 'getMarkers',
         lat: Map.center().lat(),
         lon: Map.center().lng(),
         raio: raio
+      };
+    }else{
+      if(type=='showinfo'){
+        requestMsg= {
+          action: 'markInfo',
+          nome: otherData.nome,
+        };
       }
-      var requestSignal = (JSON.stringify(requestMsg))
+    }
+    requestSignal = (JSON.stringify(requestMsg));
+    Socket.send(requestSignal);
 
-      Socket.send(requestSignal)
-    })
+    var dados = Socket.resp();
+    dados = JSON.parse(dados);
+    });
 
-    Map.actionMap(function (nome) {
-      console.log('NOME: ' + nome)
-      requestMsg = {
-        action: 'markInfo',
-        nome: nome,
-      }
-      var requestSignal = (JSON.stringify(requestMsg))
-      Socket.send(requestSignal)
-
-      var dados = Socket.resp()
-      dados = JSON.parse(dados)
-      if (dados !== null) {
-        console.log('MENSAGEM RECEBIDA')
-      }
-    })
+    Map.actionMap(function () {
+        var val;
+        var client = new XMLHttpRequest();
+        client.open('GET', 'imports/addLocalInput.html');
+        client.onreadystatechange = function() {
+          //adaptando o mapa
+          //exibindo a janela de input
+          var insertion = document.getElementById("resp");
+          insertion.style.display='block';
+          insertion.innerHTML = client.responseText;
+          console.log('exibindo div');
+        };
+        client.send();
+    });
   }else {
-    alert('Navegador velho demais, vai fazer uma meia de tricô...')
-    window.location.href = 'https:// www.google.com.br/?gws_rd = ssl#newwindow = 1&q = como+fazer+meia+de+trico'
-    return false
+    alert('Navegador velho demais, vai fazer uma meia de tricô...');
+    window.location.href = 'https:// www.google.com.br/?gws_rd = ssl#newwindow = 1&q = como+fazer+meia+de+trico';
+    return false;
   }
-}
+};
