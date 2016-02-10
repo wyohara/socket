@@ -19,6 +19,7 @@ var Socket = (function () {
     return;
   }
 
+
   return {
     init: initFn,
     send: function (data) {
@@ -53,8 +54,8 @@ var Map = (function () {
   var _mapElement = document.getElementById('map');
   var _updateMap = function () {};
   var _actionMap = _updateMap;
-  var _divControlCentralize=null;
-  var _controlCentralize=null;
+  var _ControlCentralize=null;
+  var _myLocal;
 
   function initFn () {
     _m = new google.maps.Map(_mapElement, {
@@ -97,21 +98,63 @@ var Map = (function () {
       ]
     };
 
-    var _mLocal = new google.maps.Marker({
-      position: _center,
-      map: _m,
-      icon: 'imagem/point2.png',
-      animation: google.maps.Animation.DROP,
-      title: 'Estou Aqui',
-    });
+    //criando o botao de geolocation
+    var signalLocationNow=true;
+    var createLocal=true;
+    var geolocation = document.getElementById('buttonGeolocation');
+    geolocation.index = 1;
+    _m.controls[google.maps.ControlPosition.TOP_CENTER].push(geolocation);
+    google.maps.event.addDomListener(geolocation, 'click', function() {
+      //verificando se a golocation esta ativa
+        if (navigator.geolocation) {
+          _ControlCentralize = document.getElementById('buttonCentralize');
+          _ControlCentralize.index = 1;
+          _m.controls[google.maps.ControlPosition.LEFT_CENTER].push(_ControlCentralize);
 
-    _mLocal.addListener(
-      'click',
-      function () {
-        //_actionMap(marker.nome,'showPoint');
-        _actionMap();
+
+          navigator.geolocation.getCurrentPosition(function (position) {
+          _center = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          _ControlCentralize.style.display="block";
+
+          if(createLocal===true){
+            createLocal=false;
+              _myLocal = new google.maps.Marker({
+                position: _center,
+                map: _m,
+                icon: 'imagem/point2.png',
+                animation: google.maps.Animation.DROP,
+                title: 'Estou Aqui',
+              });
+
+              _myLocal.addListener(
+                'click',
+                function () {
+                  //_actionMap(marker.nome,'showPoint');
+                  _actionMap();
+                }
+              );
+            }else{
+          _myLocal.setPosition(_center);
+        }
+          //sinal para realizar o comando abaixo uma vez
+          if(signalLocationNow===true){
+            _m.setCenter(_center);
+            _updateMap('update');
+            _m.setZoom(15);
+            setLocationNow=false;
+          }
+        });
       }
-    );
+
+
+      google.maps.event.addDomListener(_ControlCentralize, 'click', function() {
+        _m.setCenter(_center);
+        _m.setZoom(15);
+      });
+    });
 
     //criando a caixa de busca
     var inputSearch = document.getElementById('searchPlace');
@@ -143,35 +186,6 @@ var Map = (function () {
       _updateMap('update');
     });
 
-    if (navigator.geolocation) {
-      var setLocationNow=true;
-      navigator.geolocation.watchPosition(function (position) {
-        var pos = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        if(_controlCentralize!==null){
-          //remove o buttonElement (botao de centralizar) e cria um novo com a atual localização a cada rotate do watchPosition
-          document.getElementById('buttonElement').remove();
-        }
-        _divControlCentralize = document.createElement('div');
-        _controlCentralize = CenterControl(_divControlCentralize, _m, pos);
-        _divControlCentralize.index = 1;
-        _m.controls[google.maps.ControlPosition.LEFT_CENTER].push(_divControlCentralize);
-
-        if(setLocationNow===true){
-          _m.setCenter(pos);
-          _m.setZoom(15);
-          setLocationNow=false;
-        }
-        _mLocal.setPosition(pos);
-        _updateMap('update');
-      });
-    }
-
-    //adicionado condicional:
-    //para nao fazer requisição se estiver dentro da area de zoom
-    //para nao fazer requisição se ainda estiver na area da req anterior
     _m.addListener(
       'dragend',
       function () {
@@ -209,40 +223,6 @@ var Map = (function () {
         _updateMap('showinfo',marker);
       }
     );
-  }
-
-  //aplicando efeito ao botao de centralizar
-  function CenterControl(divControl, map, positon){
-    var innerElement = document.createElement('div');
-    innerElement.style.backgroundColor = '#fff';
-    innerElement.style.border = '2px solid #fff';
-    innerElement.style.borderRadius = '3px';
-    innerElement.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
-    innerElement.style.cursor = 'pointer';
-    innerElement.style.margin = '10px';
-    innerElement.style.textAlign = 'center';
-    innerElement.title = 'Click to recenter the map';
-    //criando uma id para o buttonElement
-    innerElement.setAttribute('id', 'buttonElement');
-    //aplicando estilo a div interna criada
-    divControl.appendChild(innerElement);
-
-    //aplicando efeito ao texto
-    var controlText = document.createElement('div');
-    controlText.style.color = 'rgb(25,25,25)';
-    controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
-    controlText.style.fontSize = '16px';
-    controlText.style.lineHeight = '38px';
-    controlText.style.paddingLeft = '5px';
-    controlText.style.paddingRight = '5px';
-    controlText.innerHTML = 'Center Map';
-    innerElement.appendChild(controlText);
-
-    //criando o evento para o botao
-    innerElement.addEventListener('click',function(){
-      map.setCenter(positon);
-      _updateMap('update');
-    });
   }
 
   return {
@@ -307,6 +287,24 @@ var Map = (function () {
         return true;
       }
     },
+    leftBar: function(local, sendMarkResp){
+      //
+      var infoLocal= document.getElementById(local);
+      var skeletonLeftBar= new XMLHttpRequest();
+      skeletonLeftBar.open('GET', 'imports/leftBarSkeleton.html');
+      skeletonLeftBar.onreadystatechange = function() {
+        var response='';
+        var showData='';
+        for (var i=0; i<sendMarkResp.length; i++){
+          response='<div style="width:94%;height:50px;margin:1%;background-Color:#fff;text-align:left;padding:2%">';
+          response=response+'nome:'+sendMarkResp[i].nome+"</br>";
+          response=response+"local:"+sendMarkResp[i].lat+"</div>";
+          showData=showData+response;
+        }
+        infoLocal.innerHTML =showData;
+      };
+      skeletonLeftBar.send();
+    },
   };
 })();
 
@@ -320,6 +318,7 @@ window.onload = function () {
     Socket.socketResponse(function (resp) {
       var dados = JSON.parse(resp);
       Map.marker(dados.markers);
+      Map.leftBar("infoLocal", dados.markers);
     });
 
     // Obtendo os valores sempre que o mapa é atualizado
@@ -352,6 +351,7 @@ window.onload = function () {
     var dados = Socket.resp();
     dados = JSON.parse(dados);
     });
+
 
     Map.actionMap(function () {
         var val;

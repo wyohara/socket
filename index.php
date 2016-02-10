@@ -14,10 +14,16 @@
   <div class=section>
       <div class=container>
           <div class="row">
+            <div class="three columns">
+              <div id="infoLocal">
+              </div>
+            </div>
               <div class="nine columns">
+                  <button id="buttonGeolocation">Meu Local</button>
                   <input id="searchPlace" type="text" placeholder="Digite sua busca"/>
                   <div id="map">
                   </div>
+                  <button id="buttonCentralize">Voltar ao Centro</button>
               </div>
               <div class="four columns">
                 <div id="resp">
