@@ -11,28 +11,33 @@
   <link rel=stylesheet href=css/style.css>
 </head>
 <body >
-  <div class=section>
-      <div class=container>
-          <div class="row">
-            <div class="three columns">
-              <div id="infoLocal">
-              </div>
-            </div>
-              <div class="nine columns">
-                  <button id="buttonGeolocation">Meu Local</button>
-                  <input id="searchPlace" type="text" placeholder="Digite sua busca"/>
-                  <div id="map">
-                  </div>
-                  <button id="buttonCentralize">Voltar ao Centro</button>
-              </div>
-              <div class="four columns">
-                <div id="resp">
-                </div>
-              </div>
-          </div>
-      </div>
+  <div class="section">
+    <div id="topBar">
+      <button id="buttonGeolocation"></button>
+      <input id="searchPlace" type="text" placeholder="Encontre aqui"/>
+      <button id="contribution" onclick="Map.contribution()">Contribua</button>
+    </div>
 
+    <div class=container>
+      <div class="row">
+        <div class="four columns">
+          <div id="infoLocal">
+          </div>
+        </div>
+
+        <div class="eight columns">
+          <div id="map">
+          </div>
+          <button id="buttonCentralize">Centro</button>
+          <div id="resp">
+          </div>
+        </div>
+
+
+
+    </div>
   </div>
+</div>
   <script src="js/code.js" charset="utf-8"></script>
 </body>
 </html>

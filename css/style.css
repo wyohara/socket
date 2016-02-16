@@ -1,11 +1,55 @@
+.section {
+  text-align: center;
+}
+
+.section-heading,.section-description {
+  margin-bottom: 1.2rem;
+}
+
+.blockInfo{
+  width:94%;
+  height:20vh;
+  min-height: 90px;
+  margin:1%;
+  background-color:#fff;
+  text-align:left;
+  padding:2%;
+}
+
+#topBar{
+  background-color: red;
+  height:7vh;
+  min-height: 50px;
+}
+
+#map{
+  height: 90vh;
+  z-index: 100;
+}
+
 #infoLocal{
-  height:500px;
+  height: 90vh;
   background-color: #CCC;
+  overflow-x: scroll;
+}
+
+#resp{
+  display:none;
+  float:left;
+  background-color: #f0f;
+  position: absolute;
+  
+  height:90vh;
 }
 
 #buttonGeolocation{
   background-color: #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,.3)
+  width:20px;
+  height: 40px;
+  background-image: url("../imagem/offGPS.png");
+  background-size: 35px 35px;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 #buttonCentralize{
@@ -14,25 +58,25 @@
   margin:10px;
   display: none;
 }
-
-#map
-{
-  height: 500px;
+#contribution{
+  background-color: #fff
 }
 
-.section {
-  padding: 8rem 0 7rem;
-  text-align: center;
+.closeImage{
+  width:50px;
+  float:right;
+  margin-left:100%;
 }
-.section-heading,
-.section-description {
-  margin-bottom: 1.2rem;
+.imgExplain{
+  width:80%;
 }
 
-#resp{
-  display:none;
-  width:400px;
-  height:500px;
-  background-color: green;
-  float:left;
+@media (max-width:550px){
+  #infoLocal{
+    height:20vh;
+  }
+
+  #map{
+    height: 70vh;
+  }
 }

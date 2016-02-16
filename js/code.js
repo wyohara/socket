@@ -19,7 +19,6 @@ var Socket = (function () {
     return;
   }
 
-
   return {
     init: initFn,
     send: function (data) {
@@ -53,7 +52,6 @@ var Map = (function () {
   var _zoom = 10;
   var _mapElement = document.getElementById('map');
   var _updateMap = function () {};
-  var _actionMap = _updateMap;
   var _ControlCentralize=null;
   var _myLocal;
 
@@ -101,23 +99,30 @@ var Map = (function () {
     //criando o botao de geolocation
     var signalLocationNow=true;
     var createLocal=true;
+    var createButtonCentralize=false;
     var geolocation = document.getElementById('buttonGeolocation');
+    _m.controls[google.maps.ControlPosition.RIGHT_TOP].push(geolocation);
+    geolocation.style.marginLeft="10px";
     geolocation.index = 1;
-    _m.controls[google.maps.ControlPosition.TOP_CENTER].push(geolocation);
+
+
     google.maps.event.addDomListener(geolocation, 'click', function() {
       //verificando se a golocation esta ativa
         if (navigator.geolocation) {
           _ControlCentralize = document.getElementById('buttonCentralize');
-          _ControlCentralize.index = 1;
-          _m.controls[google.maps.ControlPosition.LEFT_CENTER].push(_ControlCentralize);
 
+          if (createButtonCentralize===false){
+          _m.controls[google.maps.ControlPosition.TOP_RIGHT].push(_ControlCentralize);
+          _ControlCentralize.index = 1;
+          createButtonCentralize=true;
+        }
 
           navigator.geolocation.getCurrentPosition(function (position) {
           _center = {
             lat: position.coords.latitude,
             lng: position.coords.longitude
           };
-          _ControlCentralize.style.display="block";
+            _ControlCentralize.style.display="block";
 
           if(createLocal===true){
             createLocal=false;
@@ -128,14 +133,6 @@ var Map = (function () {
                 animation: google.maps.Animation.DROP,
                 title: 'Estou Aqui',
               });
-
-              _myLocal.addListener(
-                'click',
-                function () {
-                  //_actionMap(marker.nome,'showPoint');
-                  _actionMap();
-                }
-              );
             }else{
           _myLocal.setPosition(_center);
         }
@@ -149,18 +146,16 @@ var Map = (function () {
         });
       }
 
-
       google.maps.event.addDomListener(_ControlCentralize, 'click', function() {
         _m.setCenter(_center);
         _m.setZoom(15);
       });
+      _updateMap('update');
     });
 
     //criando a caixa de busca
     var inputSearch = document.getElementById('searchPlace');
     var searchBox = new google.maps.places.SearchBox(inputSearch);
-    _m.controls[google.maps.ControlPosition.TOP_CENTER].push(inputSearch);
-
     searchBox.addListener('places_changed', function() {
       var places = searchBox.getPlaces();
 
@@ -192,7 +187,6 @@ var Map = (function () {
         var _zoomChange=_m.getZoom();
         if(_zoomChange>=10){
           _updateMap('update');
-
         }
       }
     );
@@ -220,8 +214,9 @@ var Map = (function () {
     newMarker.addListener(
       'click',
       function () {
-        _updateMap('showinfo',marker);
+        _updateMap('showInfo',marker.nome);
       }
+
     );
   }
 
@@ -287,23 +282,110 @@ var Map = (function () {
         return true;
       }
     },
+    //barra lateral contendo todos os marcadores
     leftBar: function(local, sendMarkResp){
-      //
       var infoLocal= document.getElementById(local);
-      var skeletonLeftBar= new XMLHttpRequest();
-      skeletonLeftBar.open('GET', 'imports/leftBarSkeleton.html');
-      skeletonLeftBar.onreadystatechange = function() {
         var response='';
         var showData='';
+        var cal='0';
         for (var i=0; i<sendMarkResp.length; i++){
-          response='<div style="width:94%;height:50px;margin:1%;background-Color:#fff;text-align:left;padding:2%">';
-          response=response+'nome:'+sendMarkResp[i].nome+"</br>";
+          response='<div class="blockInfo" onclick="Map.infoMouseClick('+i+')">';
+          response=response+'nome:<div class="'+i+'" >'+sendMarkResp[i].nome+'</div>';
           response=response+"local:"+sendMarkResp[i].lat+"</div>";
           showData=showData+response;
         }
         infoLocal.innerHTML =showData;
-      };
-      skeletonLeftBar.send();
+      },
+
+    //evento que ocorre quando clicar em um elemento na leftbar
+    infoMouseClick: function (i){
+      //usando map.call para retornar os valores da string obtida do html
+      var objectHTML = document.getElementsByClassName(i),
+      string = [].map.call( objectHTML, function(node){
+
+      infoToString= node.textContent || node.innerText || "";
+      }).join("");
+
+      _updateMap('showInfo', infoToString);
+    },
+
+    //exibição dos dados na nova janela fluutuante
+    infoBar: function(value){
+      var local=document.getElementById('resp');
+      local.style.display='block';
+      local.style.zIndex='110';
+
+      var map=document.getElementById('map');
+      map.style.height='30vh';
+      //verificando o tamanho da tela para posicionar a infobar;
+      var mediaCel = window.matchMedia( "(max-width: 500px)" );
+
+      if(mediaCel.matches){
+        local.style.top="50vh";
+        local.style.left='0%';
+
+      }else{
+        local.style.top='30vh';
+    }
+      var informationSowed=
+      '<div class="explain">'+
+        '<img src="imagem/close.png" class="closeImage" onclick="Map.close('+'"information"'+')"/>'+
+        '<div class="contentExplain">'+
+          '<img class="imgExplain" src="'+value[0].img+'"/>'+
+          '<div>nome:'+value[0].nome+'</div>'+
+          '<div>endereço:'+value[0].end+'</div>'+
+          '<div>sobre:'+value[0].sobre+
+          '</div>'+
+        '</div>'+
+      '</div>';
+      local.innerHTML=informationSowed;
+    },
+
+    close:function(option){
+      var resp=document.getElementById('resp');
+      var map=document.getElementById('map');
+
+      if(option==='information'){
+        resp.style.display='none';
+        resp.innerHTML='';
+        map.style.height="90vh";
+      }else{
+        if(option==='insertion'){
+          resp.style.display='none';
+          resp.innerHTML='';
+          map.style.height="90vh";
+          map.style.width='100%';
+        }
+      }
+
+    },
+
+    contribution: function(){
+      var leftBar=document.getElementById('infoLocal');
+      var map=document.getElementById('map');
+      var resp=document.getElementById('resp');
+
+      //verificando o tamanho da tela
+      var mediaCel = window.matchMedia( "(max-width: 500px)" );
+
+      if(mediaCel.matches){
+        map.style.height='30vh';
+        resp.innerHTML='';
+        resp.style.display='block';
+        resp.style.height='90vh';
+        resp.style.zIndex='110';
+        leftBar.innerHTML='<h3>Inserir algum dado extra como cadastro do usuario</h3>';
+
+      }else{
+        leftBar.innerHTML='<h3>Inserir algum dado extra como cadastro do usuario</h3>';
+        map.style.width='50%';
+        map.style.height='40vh';
+        resp.style.top='0vh';
+        resp.style.display='block';
+        resp.style.width='60%';
+        resp.style.zIndex='90';
+      }
+      resp.innerHTML='';
     },
   };
 })();
@@ -317,8 +399,18 @@ window.onload = function () {
 
     Socket.socketResponse(function (resp) {
       var dados = JSON.parse(resp);
-      Map.marker(dados.markers);
-      Map.leftBar("infoLocal", dados.markers);
+
+      if (dados.action==='sendMarkers'){
+        Map.marker(dados.markers);
+      }
+
+      if (dados.action==='sendMarkers'){
+        Map.leftBar("infoLocal", dados.markers);
+      }
+
+      if (dados.action==='sendInfo'){
+        Map.infoBar(dados.info);
+      }
     });
 
     // Obtendo os valores sempre que o mapa é atualizado
@@ -338,13 +430,14 @@ window.onload = function () {
         raio: raio
       };
     }else{
-      if(type=='showinfo'){
+      if(type=='showInfo'){
         requestMsg= {
-          action: 'markInfo',
-          nome: otherData.nome,
+          action: 'showInfo',
+          nome: otherData,
         };
       }
     }
+
     requestSignal = (JSON.stringify(requestMsg));
     Socket.send(requestSignal);
 
@@ -352,21 +445,6 @@ window.onload = function () {
     dados = JSON.parse(dados);
     });
 
-
-    Map.actionMap(function () {
-        var val;
-        var client = new XMLHttpRequest();
-        client.open('GET', 'imports/addLocalInput.html');
-        client.onreadystatechange = function() {
-          //adaptando o mapa
-          //exibindo a janela de input
-          var insertion = document.getElementById("resp");
-          insertion.style.display='block';
-          insertion.innerHTML = client.responseText;
-          console.log('exibindo div');
-        };
-        client.send();
-    });
   }else {
     alert('Navegador velho demais, vai fazer uma meia de tricô...');
     window.location.href = 'https:// www.google.com.br/?gws_rd = ssl#newwindow = 1&q = como+fazer+meia+de+trico';
