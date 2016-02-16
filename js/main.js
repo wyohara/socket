@@ -43,7 +43,6 @@ var Socket = (function () {
 var Map = (function () {
   var _m = null;
   var marksData=[];
-  var _clusterOptions;
   var _center = {
     'lat': -22.9410272,
     'lng': -43.554638
@@ -54,6 +53,34 @@ var Map = (function () {
   var _updateMap = function () {};
   var _ControlCentralize=null;
   var _myLocal;
+  var _clusterOptions = {
+    gridSize: 50,
+    //maxZoom: 14,
+    styles: [{
+      height: 46,
+      url: "imagem/cluster2.png",
+      width: 46,
+      textColor:'#ffffff',
+    },
+    {
+      height: 46,
+      url: "imagem/cluster2.png",
+      width: 46,
+      textColor:'#ffffff'
+    }]
+  };
+  var _makeCluster;
+  var _signalCreateLocal=false;
+  var _geolocation;
+  var _inputSearch;
+  var _searchBox;
+  var _bounds;
+  var _resp=document.getElementById('resp');
+  var _map=document.getElementById('map');
+  var _mediaCel= window.matchMedia( "(max-width: 500px)" );
+  var _leftBar=document.getElementById('infoLocal');
+  var _informationShowed;
+  var _infoToString;
 
   function initFn () {
     _m = new google.maps.Map(_mapElement, {
@@ -77,73 +104,47 @@ var Map = (function () {
       },
     });
 
-    _clusterOptions = {
-      gridSize: 50,
-      //maxZoom: 14,
-      styles: [
-        {
-          height: 46,
-          url: "imagem/cluster2.png",
-          width: 46,
-          textColor:'#ffffff',
-        },
-        {
-          height: 46,
-          url: "imagem/cluster2.png",
-          width: 46,
-          textColor:'#ffffff'
-        }
-      ]
-    };
-
     //criando o botao de geolocation
-    var signalLocationNow=true;
-    var createLocal=true;
-    var createButtonCentralize=false;
-    var geolocation = document.getElementById('buttonGeolocation');
-    _m.controls[google.maps.ControlPosition.RIGHT_TOP].push(geolocation);
-    geolocation.style.marginLeft="10px";
-    geolocation.index = 1;
+    _geolocation = document.getElementById('buttonGeolocation');
+    _m.controls[google.maps.ControlPosition.RIGHT_TOP].push(_geolocation);
+    _geolocation.style.marginLeft="10px";
+    _geolocation.index = 1;
+    _ControlCentralize = document.getElementById('buttonCentralize');
 
+    _m.controls[google.maps.ControlPosition.TOP_RIGHT].push(_ControlCentralize);
+    _ControlCentralize.index = 1;
 
-    google.maps.event.addDomListener(geolocation, 'click', function() {
+    google.maps.event.addDomListener(_geolocation, 'click', function() {
       //verificando se a golocation esta ativa
         if (navigator.geolocation) {
-          _ControlCentralize = document.getElementById('buttonCentralize');
 
-          if (createButtonCentralize===false){
-          _m.controls[google.maps.ControlPosition.TOP_RIGHT].push(_ControlCentralize);
-          _ControlCentralize.index = 1;
-          createButtonCentralize=true;
-        }
-
-          navigator.geolocation.getCurrentPosition(function (position) {
+        navigator.geolocation.getCurrentPosition(function (position) {
           _center = {
             lat: position.coords.latitude,
             lng: position.coords.longitude
           };
-            _ControlCentralize.style.display="block";
 
-          if(createLocal===true){
-            createLocal=false;
-              _myLocal = new google.maps.Marker({
-                position: _center,
-                map: _m,
-                icon: 'imagem/point2.png',
-                animation: google.maps.Animation.DROP,
-                title: 'Estou Aqui',
-              });
-            }else{
-          _myLocal.setPosition(_center);
-        }
-          //sinal para realizar o comando abaixo uma vez
-          if(signalLocationNow===true){
-            _m.setCenter(_center);
+          _ControlCentralize.style.display="block";
+
+          if(_signalCreateLocal===false){
+            _signalCreateLocal=true;
+
+            _myLocal = new google.maps.Marker({
+              position: _center,
+              map: _m,
+              icon: 'imagem/point2.png',
+              animation: google.maps.Animation.DROP,
+              title: 'Estou Aqui',
+            });
+
             _updateMap('update');
             _m.setZoom(15);
-            setLocationNow=false;
-          }
+          }else{
+            _myLocal.setPosition(_center);
+        }
+
         });
+        _m.setCenter(_center);
       }
 
       google.maps.event.addDomListener(_ControlCentralize, 'click', function() {
@@ -154,10 +155,10 @@ var Map = (function () {
     });
 
     //criando a caixa de busca
-    var inputSearch = document.getElementById('searchPlace');
-    var searchBox = new google.maps.places.SearchBox(inputSearch);
-    searchBox.addListener('places_changed', function() {
-      var places = searchBox.getPlaces();
+  _inputSearch = document.getElementById('searchPlace');
+  _searchBox= new google.maps.places.SearchBox(_inputSearch);
+  _searchBox.addListener('places_changed', function() {
+      var places = _searchBox.getPlaces();
 
       //verificando valores da searchbox
       if (places.length === 0) {
@@ -165,18 +166,18 @@ var Map = (function () {
       }
 
       //capturando bounds
-      var bounds = new google.maps.LatLngBounds();
+      _bounds = new google.maps.LatLngBounds();
 
       //gerando a posição do resultado
       places.forEach(function(place) {
         if (place.geometry.viewport) {
           // Only geocodes have viewport.
-          bounds.union(place.geometry.viewport);
+          _bounds.union(place.geometry.viewport);
         } else {
-          bounds.extend(place.geometry.location);
+          _bounds.extend(place.geometry.location);
         }
       });
-      _m.fitBounds(bounds);
+      _m.fitBounds(_bounds);
       _m.setZoom(13);
       _updateMap('update');
     });
@@ -276,7 +277,7 @@ var Map = (function () {
         for (var i = 0; i < mark.length; i++) {
           addMarker(mark[i]);
         }
-        var mc = new MarkerClusterer(_m, marksData, _clusterOptions,{
+        var _makeCluster = new MarkerClusterer(_m, marksData, _clusterOptions,{
           averageCenter: true
         });
         return true;
@@ -301,35 +302,34 @@ var Map = (function () {
     infoMouseClick: function (i){
       //usando map.call para retornar os valores da string obtida do html
       var objectHTML = document.getElementsByClassName(i),
-      string = [].map.call( objectHTML, function(node){
 
-      infoToString= node.textContent || node.innerText || "";
+      string = [].map.call(objectHTML, function(node){
+        _infoToString= node.textContent || node.innerText || "";
       }).join("");
 
-      _updateMap('showInfo', infoToString);
+      _updateMap('showInfo', _infoToString);
     },
 
     //exibição dos dados na nova janela fluutuante
     infoBar: function(value){
-      var local=document.getElementById('resp');
-      local.style.display='block';
-      local.style.zIndex='110';
+      _resp=document.getElementById('resp');
+      _resp.style.display='block';
+      _resp.style.zIndex='110';
 
-      var map=document.getElementById('map');
-      map.style.height='30vh';
+      _map=document.getElementById('map');
+      _map.style.height='30vh';
       //verificando o tamanho da tela para posicionar a infobar;
-      var mediaCel = window.matchMedia( "(max-width: 500px)" );
 
-      if(mediaCel.matches){
-        local.style.top="50vh";
-        local.style.left='0%';
-
+      if(_mediaCel.matches){
+        _resp.style.top="50vh";
+        _resp.style.left='0%';
       }else{
-        local.style.top='30vh';
+        _resp.style.top='30vh';
     }
-      var informationSowed=
+
+    _informationSowed=
       '<div class="explain">'+
-        '<img src="imagem/close.png" class="closeImage" onclick="Map.close('+'"information"'+')"/>'+
+        '<img class="closeImage" onclick=Map.close'+'("information")'+' src="imagem/close.png" />'+
         '<div class="contentExplain">'+
           '<img class="imgExplain" src="'+value[0].img+'"/>'+
           '<div>nome:'+value[0].nome+'</div>'+
@@ -338,12 +338,12 @@ var Map = (function () {
           '</div>'+
         '</div>'+
       '</div>';
-      local.innerHTML=informationSowed;
+      _resp.innerHTML=_informationSowed;
     },
 
     close:function(option){
-      var resp=document.getElementById('resp');
-      var map=document.getElementById('map');
+      _resp=document.getElementById('resp');
+      _map=document.getElementById('map');
 
       if(option==='information'){
         resp.style.display='none';
@@ -361,31 +361,25 @@ var Map = (function () {
     },
 
     contribution: function(){
-      var leftBar=document.getElementById('infoLocal');
-      var map=document.getElementById('map');
-      var resp=document.getElementById('resp');
-
       //verificando o tamanho da tela
-      var mediaCel = window.matchMedia( "(max-width: 500px)" );
-
-      if(mediaCel.matches){
-        map.style.height='30vh';
-        resp.innerHTML='';
-        resp.style.display='block';
-        resp.style.height='90vh';
-        resp.style.zIndex='110';
-        leftBar.innerHTML='<h3>Inserir algum dado extra como cadastro do usuario</h3>';
+      if(_mediaCel.matches){
+        _map.style.height='30vh';
+        _resp.innerHTML='';
+        _resp.style.display='block';
+        _resp.style.height='90vh';
+        _resp.style.zIndex='110';
+        _leftBar.innerHTML='<h3>Inserir algum dado extra como cadastro do usuario</h3>';
 
       }else{
-        leftBar.innerHTML='<h3>Inserir algum dado extra como cadastro do usuario</h3>';
-        map.style.width='50%';
-        map.style.height='40vh';
-        resp.style.top='0vh';
-        resp.style.display='block';
-        resp.style.width='60%';
-        resp.style.zIndex='90';
+        _leftBar.innerHTML='<h3>Inserir algum dado extra como cadastro do usuario</h3>';
+        _map.style.width='50%';
+        _map.style.height='40vh';
+        _resp.style.top='0vh';
+        _resp.style.display='block';
+        _resp.style.width='60%';
+        _resp.style.zIndex='90';
       }
-      resp.innerHTML='';
+      _resp.innerHTML='';
     },
   };
 })();
