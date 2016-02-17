@@ -38,6 +38,6 @@
     </div>
   </div>
 </div>
-  <script src="js/code.js" charset="utf-8"></script>
+  <script src="js/main.js" charset="utf-8"></script>
 </body>
 </html>

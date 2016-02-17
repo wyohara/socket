@@ -41,17 +41,21 @@ var Socket = (function () {
 //       Map module
 
 var Map = (function () {
+  //captura de elementos do html
+  var _mapElement = document.getElementById('map');
+  var _leftBarElement=document.getElementById('infoLocal');
+  var _respElement=document.getElementById('resp');
+
+  //variaveis para criar o mapa
   var _m = null;
   var marksData=[];
   var _center = {
     'lat': -22.9410272,
     'lng': -43.554638
   };
-  var newMarker;
+
   var _zoom = 10;
-  var _mapElement = document.getElementById('map');
   var _updateMap = function () {};
-  var _ControlCentralize=null;
   var _myLocal;
   var _clusterOptions = {
     gridSize: 50,
@@ -69,34 +73,41 @@ var Map = (function () {
       textColor:'#ffffff'
     }]
   };
-  var _makeCluster;
-  var _signalCreateLocal=false;
+
+
+  //elementos para criar outros botoes e icones
   var _geolocation;
   var _inputSearch;
   var _searchBox;
-  var _bounds;
-  var _resp=document.getElementById('resp');
-  var _map=document.getElementById('map');
-  var _mediaCel= window.matchMedia( "(max-width: 500px)" );
-  var _leftBar=document.getElementById('infoLocal');
   var _informationShowed;
+  var _bounds;
+  var _makeCluster;
+  var _places;
+  var _newMarker;
+
+  //verificando tela do dispositivo
+  var _mediaCel= window.matchMedia( "(max-width: 500px)" );
+
+  //sinais importantes
+  var _signalCreateLocal=false;
+  var _zoomChange;
   var _infoToString;
+  var _ControlCentralize=null;
 
   function initFn () {
     _m = new google.maps.Map(_mapElement, {
       center: _center,
       zoom: _zoom,
       mapTypeControl: true,
+      //posicionando elementos nativos do mapa
       mapTypeControlOptions: {
         style: google.maps.MapTypeControlStyle.DEFAULT,
         position: google.maps.ControlPosition.TOP_LEFT
       },
-
       streetViewControl: true,
       streetViewControlOptions: {
         position: google.maps.ControlPosition.TOP_RIGHT,
       },
-
       zoomControl: true,
       zoomControlOptions: {
         position: google.maps.ControlPosition.RIGHT_CENTER,
@@ -115,9 +126,9 @@ var Map = (function () {
     _ControlCentralize.index = 1;
 
     google.maps.event.addDomListener(_geolocation, 'click', function() {
+
       //verificando se a golocation esta ativa
         if (navigator.geolocation) {
-
         navigator.geolocation.getCurrentPosition(function (position) {
           _center = {
             lat: position.coords.latitude,
@@ -158,10 +169,10 @@ var Map = (function () {
   _inputSearch = document.getElementById('searchPlace');
   _searchBox= new google.maps.places.SearchBox(_inputSearch);
   _searchBox.addListener('places_changed', function() {
-      var places = _searchBox.getPlaces();
+      _places = _searchBox.getPlaces();
 
       //verificando valores da searchbox
-      if (places.length === 0) {
+      if (_places.length === 0) {
         return;
       }
 
@@ -169,7 +180,7 @@ var Map = (function () {
       _bounds = new google.maps.LatLngBounds();
 
       //gerando a posição do resultado
-      places.forEach(function(place) {
+      _places.forEach(function(place) {
         if (place.geometry.viewport) {
           // Only geocodes have viewport.
           _bounds.union(place.geometry.viewport);
@@ -185,7 +196,8 @@ var Map = (function () {
     _m.addListener(
       'dragend',
       function () {
-        var _zoomChange=_m.getZoom();
+        //verifica se está no zoom maximo
+        _zoomChange=_m.getZoom();
         if(_zoomChange>=10){
           _updateMap('update');
         }
@@ -196,7 +208,8 @@ var Map = (function () {
     _m.addListener(
       'zoom_changed',
       function () {
-        var _zoomChange=_m.getZoom();
+        //verifica se está no zoom maximo
+        _zoomChange=_m.getZoom();
         if(_zoomChange>=10){
           _updateMap('update');
       }
@@ -205,14 +218,14 @@ var Map = (function () {
   }
 
   function addMarker (marker) {
-    newMarker = new google.maps.Marker({
+    _newMarker = new google.maps.Marker({
       position: new google.maps.LatLng(marker.lat, marker.lon),
       icon: 'imagem/local.png',
       title: marker.nome,
       map: _m
     });
-    marksData.push(newMarker);
-    newMarker.addListener(
+    marksData.push(_newMarker);
+    _newMarker.addListener(
       'click',
       function () {
         _updateMap('showInfo',marker.nome);
@@ -224,14 +237,9 @@ var Map = (function () {
   return {
     //   Inicializa o mapa
     init: initFn,
-
     // gerando o callback para o update do mapa
     updateMap: function (cb) {
       _updateMap = cb;
-    },
-
-    actionMap: function (cb) {
-      _actionMap = cb;
     },
 
     //  parametros do updateMap, zoom, centro, markers
@@ -256,21 +264,18 @@ var Map = (function () {
 
     raio: function (r) {
       // obtendo o centro para o updateMap
-      if (typeof r === 'undefined') {
         _mCenter = _m.getCenter();
         _mCorner = _m.getBounds().getNorthEast();
-
         if (Math.abs(_mCorner.lng()) > Math.abs(_mCenter.lng())) {
           Raio = (Math.abs(_mCorner.lng()) - Math.abs(_mCenter.lng()));
           return Raio;
         } else {
           Raio = (Math.abs(_mCenter.lng()) - Math.abs(_mCorner.lng()));
           return Raio;
-        }
       }
     },
 
-    //   Add um ou mais novos marcadores //  TODO: Remover marcadores
+    //   Add um ou mais novos marcadores
     marker: function (mark) {
       marksData=[];
       if (Array.isArray(mark)) {
@@ -283,6 +288,7 @@ var Map = (function () {
         return true;
       }
     },
+
     //barra lateral contendo todos os marcadores
     leftBar: function(local, sendMarkResp){
       var infoLocal= document.getElementById(local);
@@ -312,19 +318,18 @@ var Map = (function () {
 
     //exibição dos dados na nova janela fluutuante
     infoBar: function(value){
-      _resp=document.getElementById('resp');
-      _resp.style.display='block';
-      _resp.style.zIndex='110';
+      _respElement.style.display='block';
+      _respElement.style.zIndex='110';
 
-      _map=document.getElementById('map');
-      _map.style.height='30vh';
+      _mapElement=document.getElementById('map');
+      _mapElement.style.height='30vh';
       //verificando o tamanho da tela para posicionar a infobar;
 
       if(_mediaCel.matches){
-        _resp.style.top="50vh";
-        _resp.style.left='0%';
+        _respElement.style.top="50vh";
+        _respElement.style.left='0%';
       }else{
-        _resp.style.top='30vh';
+        _respElement.style.top='30vh';
     }
 
     _informationSowed=
@@ -338,23 +343,20 @@ var Map = (function () {
           '</div>'+
         '</div>'+
       '</div>';
-      _resp.innerHTML=_informationSowed;
+      _respElement.innerHTML=_informationSowed;
     },
 
     close:function(option){
-      _resp=document.getElementById('resp');
-      _map=document.getElementById('map');
-
       if(option==='information'){
-        resp.style.display='none';
-        resp.innerHTML='';
-        map.style.height="90vh";
+        _respElement.style.display='none';
+        _respElement.innerHTML='';
+        _mapElement.style.height="90vh";
       }else{
         if(option==='insertion'){
-          resp.style.display='none';
-          resp.innerHTML='';
-          map.style.height="90vh";
-          map.style.width='100%';
+          _respElement.style.display='none';
+          _respElement.innerHTML='';
+          _mapElement.style.height="90vh";
+          _mapElement.style.width='100%';
         }
       }
 
@@ -363,23 +365,23 @@ var Map = (function () {
     contribution: function(){
       //verificando o tamanho da tela
       if(_mediaCel.matches){
-        _map.style.height='30vh';
-        _resp.innerHTML='';
-        _resp.style.display='block';
-        _resp.style.height='90vh';
-        _resp.style.zIndex='110';
-        _leftBar.innerHTML='<h3>Inserir algum dado extra como cadastro do usuario</h3>';
+        _mapElement.style.height='30vh';
+        _respElement.innerHTML='';
+        _respElement.style.display='block';
+        _respElement.style.height='90vh';
+        _respElement.style.zIndex='110';
+        _leftBarElement.innerHTML='<h3>Inserir algum dado extra como cadastro do usuario</h3>';
 
       }else{
-        _leftBar.innerHTML='<h3>Inserir algum dado extra como cadastro do usuario</h3>';
-        _map.style.width='50%';
-        _map.style.height='40vh';
-        _resp.style.top='0vh';
-        _resp.style.display='block';
-        _resp.style.width='60%';
-        _resp.style.zIndex='90';
+        _leftBarElement.innerHTML='<h3>Inserir algum dado extra como cadastro do usuario</h3>';
+        _mapElement.style.width='50%';
+        _mapElement.style.height='40vh';
+        _respElement.style.top='0vh';
+        _respElement.style.display='block';
+        _respElement.style.width='60%';
+        _respElement.style.zIndex='90';
       }
-      _resp.innerHTML='';
+      _respElement.innerHTML='';
     },
   };
 })();
