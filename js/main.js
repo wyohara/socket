@@ -282,7 +282,7 @@ var Map = (function () {
         for (var i = 0; i < mark.length; i++) {
           addMarker(mark[i]);
         }
-        var _makeCluster = new MarkerClusterer(_m, marksData, _clusterOptions,{
+        _makeCluster = new MarkerClusterer(_m, marksData, _clusterOptions,{
           averageCenter: true
         });
         return true;
@@ -291,17 +291,15 @@ var Map = (function () {
 
     //barra lateral contendo todos os marcadores
     leftBar: function(local, sendMarkResp){
-      var infoLocal= document.getElementById(local);
-        var response='';
-        var showData='';
-        var cal='0';
+      _leftBarElement= document.getElementById(local);
+
         for (var i=0; i<sendMarkResp.length; i++){
-          response='<div class="blockInfo" onclick="Map.infoMouseClick('+i+')">';
-          response=response+'nome:<div class="'+i+'" >'+sendMarkResp[i].nome+'</div>';
-          response=response+"local:"+sendMarkResp[i].lat+"</div>";
-          showData=showData+response;
+          _informationSowed='<div class="blockInfo" onclick="Map.infoMouseClick('+i+')">'+
+          'nome:<div class="'+i+'" >'+sendMarkResp[i].nome+'</div>'+
+          'local:'+sendMarkResp[i].lat+'</div>';
+
         }
-        infoLocal.innerHTML =showData;
+        _leftBarElement.innerHTML =_informationSowed;
       },
 
     //evento que ocorre quando clicar em um elemento na leftbar
@@ -320,8 +318,6 @@ var Map = (function () {
     infoBar: function(value){
       _respElement.style.display='block';
       _respElement.style.zIndex='110';
-
-      _mapElement=document.getElementById('map');
       _mapElement.style.height='30vh';
       //verificando o tamanho da tela para posicionar a infobar;
 
