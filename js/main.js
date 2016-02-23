@@ -45,18 +45,15 @@ var Map = (function () {
   var _mapElement = document.getElementById('map');
   var _leftBarElement=document.getElementById('infoLocal');
   var _respElement=document.getElementById('resp');
+  var _geolocation = document.getElementById('buttonGeolocation');
+  var _inputSearch = document.getElementById('searchPlace');
+  var _ControlCentralize = document.getElementById('buttonCentralize');
 
   //variaveis para criar o mapa
   var _m = null;
   var marksData=[];
-  var _center = {
-    'lat': -22.9410272,
-    'lng': -43.554638
-  };
-
-  var _zoom = 10;
-  var _updateMap = function () {};
-  var _myLocal;
+  var _zoom = 13;
+  var _myLocal = null;
   var _clusterOptions = {
     gridSize: 50,
     //maxZoom: 14,
@@ -74,25 +71,22 @@ var Map = (function () {
     }]
   };
 
+  var _center = {
+    'lat': -22.9410272,
+    'lng': -43.554638
+  };
 
   //elementos para criar outros botoes e icones
-  var _geolocation;
-  var _inputSearch;
   var _searchBox;
-  var _informationShowed;
+  var _informationShowed = '';
   var _bounds;
-  var _makeCluster;
   var _places;
   var _newMarker;
-
+  var _updateMap = function () {};
   //verificando tela do dispositivo
   var _mediaCel= window.matchMedia( "(max-width: 500px)" );
-
-  //sinais importantes
-  var _signalCreateLocal=false;
-  var _zoomChange;
   var _infoToString;
-  var _ControlCentralize=null;
+
 
   function initFn () {
     _m = new google.maps.Map(_mapElement, {
@@ -116,73 +110,64 @@ var Map = (function () {
     });
 
     //criando o botao de geolocation
-    _geolocation = document.getElementById('buttonGeolocation');
     _m.controls[google.maps.ControlPosition.RIGHT_TOP].push(_geolocation);
     _geolocation.style.marginLeft="10px";
     _geolocation.index = 1;
-    _ControlCentralize = document.getElementById('buttonCentralize');
 
-    _m.controls[google.maps.ControlPosition.TOP_RIGHT].push(_ControlCentralize);
+    _m.controls[google.maps.ControlPosition.TOP_CENTER].push(_ControlCentralize);
     _ControlCentralize.index = 1;
 
     google.maps.event.addDomListener(_geolocation, 'click', function() {
+          if(_myLocal === null){
+            //verificando se a golocation esta ativa
+              if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                  _center = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                  };
 
-      //verificando se a golocation esta ativa
-        if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function (position) {
-          _center = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-
-          _ControlCentralize.style.display="block";
-
-          if(_signalCreateLocal===false){
-            _signalCreateLocal=true;
-
-            _myLocal = new google.maps.Marker({
-              position: _center,
-              map: _m,
-              icon: 'imagem/point2.png',
-              animation: google.maps.Animation.DROP,
-              title: 'Estou Aqui',
-            });
-
-            _updateMap('update');
-            _m.setZoom(15);
-          }else{
-            _myLocal.setPosition(_center);
-        }
-
-        });
-        _m.setCenter(_center);
+                _ControlCentralize.style.display="block";
+                _myLocal = new google.maps.Marker({
+                  position: _center,
+                  map: _m,
+                  icon: 'imagem/point2.png',
+                  animation: google.maps.Animation.DROP,
+                  title: 'Estou Aqui',
+                });
+                _updateMap('update');
+                _m.setCenter(_center);
+                _m.setZoom(15);
+              });
+            }else{
+              _myLocal.setPosition(_center);
+            }
+      }else{
+        //algo para parar de verificar posiçao
       }
+    });
 
-      google.maps.event.addDomListener(_ControlCentralize, 'click', function() {
-        _m.setCenter(_center);
-        _m.setZoom(15);
-      });
+    //criando a funcionalidade do botao centralizar
+    google.maps.event.addDomListener(_ControlCentralize, 'click', function() {
+      _m.setCenter(_center);
+      _m.setZoom(15);
       _updateMap('update');
     });
 
     //criando a caixa de busca
-  _inputSearch = document.getElementById('searchPlace');
   _searchBox= new google.maps.places.SearchBox(_inputSearch);
   _searchBox.addListener('places_changed', function() {
       _places = _searchBox.getPlaces();
-
       //verificando valores da searchbox
       if (_places.length === 0) {
         return;
       }
 
-      //capturando bounds
-      _bounds = new google.maps.LatLngBounds();
-
       //gerando a posição do resultado
+      _bounds= new google.maps.LatLngBounds();
       _places.forEach(function(place) {
         if (place.geometry.viewport) {
-          // Only geocodes have viewport.
+          // capturando o viewport
           _bounds.union(place.geometry.viewport);
         } else {
           _bounds.extend(place.geometry.location);
@@ -193,44 +178,39 @@ var Map = (function () {
       _updateMap('update');
     });
 
+    //NOTE Eventos:
+
     _m.addListener(
       'dragend',
       function () {
-        //verifica se está no zoom maximo
-        _zoomChange=_m.getZoom();
-        if(_zoomChange>=10){
-          _updateMap('update');
-        }
+        _updateMap('update');
       }
     );
-    //adicionado condicional:
-    //para nao fazer requisição se estiver com zoom dentro da area de zoom anterior
+
     _m.addListener(
       'zoom_changed',
       function () {
-        //verifica se está no zoom maximo
-        _zoomChange=_m.getZoom();
-        if(_zoomChange>=10){
-          _updateMap('update');
-      }
+        _updateMap('update');
       }
     );
   }
 
   function addMarker (marker) {
-    _newMarker = new google.maps.Marker({
-      position: new google.maps.LatLng(marker.lat, marker.lon),
-      icon: 'imagem/local.png',
-      title: marker.nome,
-      map: _m
-    });
+    for(var i=0; i<marker.length;i++){
+      _newMarker = new google.maps.Marker({
+        position: new google.maps.LatLng(marker[i].lat, marker[i].lon),
+        icon: 'imagem/local.png',
+        title: marker[i].nome,
+        map: _m,
+        id: marker[i].id
+      });
+    }
     marksData.push(_newMarker);
-    _newMarker.addListener(
-      'click',
+    //NOTE adcionando evento para mostrar detalhes do mark ao clicar
+    _newMarker.addListener('click',
       function () {
-        _updateMap('showInfo',marker.nome);
+        _updateMap('showInfo',marker.id);
       }
-
     );
   }
 
@@ -279,12 +259,12 @@ var Map = (function () {
     marker: function (mark) {
       marksData=[];
       if (Array.isArray(mark)) {
-        for (var i = 0; i < mark.length; i++) {
-          addMarker(mark[i]);
-        }
-        _makeCluster = new MarkerClusterer(_m, marksData, _clusterOptions,{
+        addMarker(mark);
+
+        var makeCluster = new MarkerClusterer(_m, marksData, _clusterOptions,{
           averageCenter: true
         });
+
         return true;
       }
     },
@@ -294,16 +274,18 @@ var Map = (function () {
       _leftBarElement= document.getElementById(local);
 
         for (var i=0; i<sendMarkResp.length; i++){
-          _informationSowed='<div class="blockInfo" onclick="Map.infoMouseClick('+i+')">'+
-          'nome:<div class="'+i+'" >'+sendMarkResp[i].nome+'</div>'+
-          'local:'+sendMarkResp[i].lat+'</div>';
-
+          var text =
+          '<div class="blockInfo" onclick="Map.infoClick('+i+')">'+
+            'nome:<div class="'+i+'" >' + sendMarkResp[i].nome+'</div>'+
+            'local:'+sendMarkResp[i].lat +
+          '</div>';
+          _informationSowed = _informationSowed + text;
         }
         _leftBarElement.innerHTML =_informationSowed;
       },
 
     //evento que ocorre quando clicar em um elemento na leftbar
-    infoMouseClick: function (i){
+    infoClick: function (i){
       //usando map.call para retornar os valores da string obtida do html
       var objectHTML = document.getElementsByClassName(i),
 
@@ -343,20 +325,21 @@ var Map = (function () {
     },
 
     close:function(option){
-      if(option==='information'){
-        _respElement.style.display='none';
-        _respElement.innerHTML='';
-        _mapElement.style.height="90vh";
-      }else{
-        if(option==='insertion'){
+      switch (option){
+        case 'information':
+          _respElement.style.display='none';
+          _respElement.innerHTML='';
+          _mapElement.style.height="90vh";
+          break;
+
+        case 'insertion':
           _respElement.style.display='none';
           _respElement.innerHTML='';
           _mapElement.style.height="90vh";
           _mapElement.style.width='100%';
+          break;
         }
-      }
-
-    },
+      },
 
     contribution: function(){
       //verificando o tamanho da tela
@@ -377,7 +360,17 @@ var Map = (function () {
         _respElement.style.width='60%';
         _respElement.style.zIndex='90';
       }
-      _respElement.innerHTML='';
+
+      _informationSowed =
+        '<div class="explain">'+
+          '<img class="closeImage" onclick=Map.close'+'("insertion")'+' src="imagem/close.png" />'+
+          '<div class="contentExplain">'+
+            '<div>nome: alguma coisa</div>'+
+            '<div>endereço: testando</div>'+
+            '<div>sobre: nada mais</div>'+
+          '</div>'+
+        '</div>';
+      _respElement.innerHTML = _informationSowed;
     },
   };
 })();
@@ -389,53 +382,57 @@ window.onload = function () {
     Map.init();
     Socket.init();
 
-    Socket.socketResponse(function (resp) {
-      var dados = JSON.parse(resp);
-
-      if (dados.action==='sendMarkers'){
-        Map.marker(dados.markers);
-      }
-
-      if (dados.action==='sendMarkers'){
-        Map.leftBar("infoLocal", dados.markers);
-      }
-
-      if (dados.action==='sendInfo'){
-        Map.infoBar(dados.info);
-      }
-    });
-
     // Obtendo os valores sempre que o mapa é atualizado
     Map.updateMap(function (type,otherData) {
       var requestMsg;
       var requestSignal;
-
-      if(type==='update'){
-      var center = Map.center();
       var zoom = Map.zoom();
-      var raio = Map.raio();
 
-      requestMsg = {
-        action: 'getMarkers',
-        lat: Map.center().lat(),
-        lon: Map.center().lng(),
-        raio: raio
-      };
-    }else{
-      if(type=='showInfo'){
-        requestMsg= {
+      switch (type) {
+        case 'update':
+          var center = Map.center();
+          var raio = Map.raio();
+
+          requestMsg = {
+            action: 'getMarkers',
+            lat: Map.center().lat(),
+            lon: Map.center().lng(),
+            raio: raio
+          };
+        break;
+
+        case 'showinfo':
+          //modificar para algo que possa ser usado corretamente
+          requestMsg= {
           action: 'showInfo',
           nome: otherData,
-        };
+          };
+        break;
       }
-    }
 
-    requestSignal = (JSON.stringify(requestMsg));
-    Socket.send(requestSignal);
-
-    var dados = Socket.resp();
-    dados = JSON.parse(dados);
+      //NOTE verificando o zoom para envio da mensagem
+      if(zoom >= 13){
+        requestSignal = (JSON.stringify(requestMsg));
+        Socket.send(requestSignal);
+      }
+      var dados = Socket.resp();
+      dados = JSON.parse(dados);
     });
+
+    //NOTE Resposta do servidor
+    Socket.socketResponse(function (resp) {
+      var dados = JSON.parse(resp);
+      switch (dados.action){
+        case 'sendmarkers':
+          Map.marker(dados.markers);
+          Map.leftBar("infoLocal", dados.markers);
+          break;
+
+        case 'sendInfo':
+            Map.infoBar(dados.info);
+            break;
+        }
+      });
 
   }else {
     alert('Navegador velho demais, vai fazer uma meia de tricô...');
